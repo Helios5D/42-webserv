@@ -1,11 +1,13 @@
 NAME = webserv
 CC = c++
 
-INCLUDES = includes
+INCLUDES_DIR = includes
 
 SRCS_DIR = srcs/
 
-SRCS =	webserv.cpp
+SRCS =	$(addprefix $(SRCS_DIR)/, requestHandler.cpp) \
+		$(addprefix $(SRCS_DIR)/, Socket.cpp) \
+		webserv.cpp
 
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
 
@@ -31,7 +33,7 @@ COL6 = \033[38;2;255;255;153m # Pastel yellow
 
 all: $(NAME)
 
-$(OBJS_DIR)/%.o: %.c
+$(OBJS_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@echo "$(CYAN)Compiling $<...$(RESET)"
 	@$(CC) $(CFLAGS) -c $< -o $@ -I $(INCLUDES_DIR)
