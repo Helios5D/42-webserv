@@ -24,13 +24,5 @@ int main(int argc, char **argv) {
 	else
 		conf_path = argv[1];
 
-	try {
-		Server server(8080);
-		server.start();
-	}
-	catch (std::exception &e) {
-		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
-	}
-
 	return 0;
 }

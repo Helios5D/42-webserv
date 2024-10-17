@@ -33,7 +33,18 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			line = line.substr(5, line.size() - 6);
 			location.index = line;
 		}
-		// Add handling of other keys such as cgi_extension or upload_save
+		else if (find("cgi_extension") == 0) {
+			line = line.substr(13, line.size() - 14);
+			location.cgi_extension = line;
+		}
+		else if (find("upload_save") == 0) {
+			line = line.substr(11, line.size() - 12);
+			location.cgi_extension = line;
+		}
+		else if (find("allowed_methods") == 0) {
+			line = line.substr(15, line.size() - 16);
+			split(line, location.allowed_methods, ' ');
+		}
 	}
 	throw std::invalid_argument("Parsing error");
 	return location;

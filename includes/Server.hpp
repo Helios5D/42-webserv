@@ -14,6 +14,7 @@
 
 #include "webserv.hpp"
 #include "ServerSocket.hpp"
+#include "Config.hpp"
 
 class Server {
 	private:
@@ -25,7 +26,7 @@ class Server {
 		ServerSocket				_server_socket;
 		std::vector<struct pollfd> _poll_fds;
 	public:
-				Server(int port);
+				Server(t_server_config config);
 				~Server();
 
 		void	init();

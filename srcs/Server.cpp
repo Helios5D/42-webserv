@@ -19,8 +19,8 @@ void handleSignal(int signal) {
 	running = false;
 }
 
-Server::Server(int listen)
-: _listen(listen), _server_socket(ServerSocket(listen))
+Server::Server(t_server_config config)
+: _listen(atoi(config.listen.c_str())), _name(config.server_name), _client_max_body_size(config.client_max_body_size), _error_pages(config.error_pages), _server_socket(ServerSocket(_listen))
 {}
 
 Server::~Server()
