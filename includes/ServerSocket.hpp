@@ -1,24 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   requestHandler.cpp                                 :+:      :+:    :+:   */
+/*   ServerSocket.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/16 15:32:20 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/17 11:26:44 by mrochedy         ###   ########.fr       */
+/*   Created: 2024/10/16 14:49:02 by hdaher            #+#    #+#             */
+/*   Updated: 2024/10/17 11:21:05 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 
-std::string readRequest(int request_fd) {
-	std::string request;
-	char buffer[1024];
-	int ret;
-	while ((ret = read(request_fd, buffer, 1024)) > 0)
-		request.append(buffer, ret);
-	if (ret < 0)
-		throw std::runtime_error("Reading request failed");
-	return (request);
-}
+class ServerSocket {
+	private:
+		int 		_socket_fd;
+		sockaddr_in	_socket_addr;
+	public:
+				ServerSocket(int port);
+				~ServerSocket();
+		void	bindSocket();
+		void	listenSocket();
+		int		acceptConnection();
+		int		getFd();
+};

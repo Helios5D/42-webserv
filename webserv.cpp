@@ -3,15 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/16 16:17:19 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/17 15:04:37 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
-#include "Socket.hpp"
+#include "Server.hpp"
 
 int main(int argc, char **argv) {
 	std::string	conf_path;
@@ -24,13 +24,12 @@ int main(int argc, char **argv) {
 	else
 		conf_path = argv[1];
 
-	Socket socket(8080);
-	socket.bindSocket();
-	socket.listenSocket();
-	while (1)
-	{
-		int connection_fd = socket.acceptConnection();
-		std::string request = readRequest(connection_fd);
+	try {
+		Server server(8080);
+		server.start();
+	}
+	catch (std::exception &e) {
+		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
 	}
 
 	return 0;

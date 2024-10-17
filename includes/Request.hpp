@@ -1,25 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Socket.hpp                                         :+:      :+:    :+:   */
+/*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/16 14:49:02 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/16 16:10:35 by mrochedy         ###   ########.fr       */
+/*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
+/*   Updated: 2024/10/17 14:27:00 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#pragma once
+
 #include "webserv.hpp"
 
-class Socket {
-	private:
-		int 		_socket_fd;
-		sockaddr_in	_socket_addr;
+class Request {
 	public:
-				Socket(int port);
-				~Socket();
-		void	bindSocket();
-		void	listenSocket();
-		int		acceptConnection();
+		Request(const std::string &request);
+		~Request();
+	private:
+		std::string							_startLine;
+		std::string							_method;
+		std::string							_target;
+		std::map<std::string, std::string>	_headers;
+		std::string							_body;
+		std::string							_response;
+		int									_resCode;
+
+		bool	_checkStartLine();
+		bool	_addHeader(const std::string &headerLine);
+		bool	_checkBody();
 };

@@ -3,10 +3,13 @@ CC = c++
 
 INCLUDES_DIR = includes
 
-SRCS_DIR = srcs/
+SRCS_DIR = srcs
 
+SRCS =	$(addprefix $(SRCS_DIR)/, tools.cpp) \
 SRCS =	$(addprefix $(SRCS_DIR)/, requestHandler.cpp) \
-		$(addprefix $(SRCS_DIR)/, Socket.cpp) \
+		$(addprefix $(SRCS_DIR)/, ServerSocket.cpp) \
+		$(addprefix $(SRCS_DIR)/, Server.cpp) \
+		$(addprefix $(SRCS_DIR)/, Request.cpp) \
 		webserv.cpp
 
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
