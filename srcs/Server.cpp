@@ -60,7 +60,7 @@ void Server::start() {
 		}
 	}
 
-	std::cout << "Closing server ..." << std::endl;
+	std::cout << COL_BLUE << "Closing server ..." << COL_RESET << std::endl;
 	close(_server_socket.getFd());
 
 	for (size_t i = 1; i < _poll_fds.size(); i++)

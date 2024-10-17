@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 14:27:00 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:21:54 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ class Request {
 		std::string							_body;
 		std::string							_response;
 		int									_resCode;
+		long								_contentLength;
 
 		bool	_checkStartLine();
 		bool	_addHeader(const std::string &headerLine);

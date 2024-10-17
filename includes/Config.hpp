@@ -2,23 +2,23 @@
 
 #include "webserv.hpp"
 
-struct Location {
+typedef struct s_location {
 	std::string					path;
 	std::string					root;
 	std::string					index;
 	std::string					cgi_extension;
 	std::string					upload_save;
 	std::vector<std::string>	allowed_methods;
-};
+} t_location;
 
-struct ServerConfig {
+typedef struct s_server_config {
 	std::string						listen;
 	std::string						server_name;
 	std::string						client_max_body_size;
 	std::map<int, std::string>		error_pages;
-	std::vector<struct Location>	locations;
-};
+	std::vector<t_location>	locations;
+} t_server_config;
 
-struct	ClusterConfig {
-	std::vector<struct ServerConfig>		servers;
-};
+typedef struct s_cluster_config {
+	std::vector<t_server_config>	servers;
+} t_cluster_config;

@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/17 15:18:43 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:28:56 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
+#include <climits>
 #include "colors.hpp"
 
 // Prototypes //

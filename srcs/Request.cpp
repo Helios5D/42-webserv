@@ -6,13 +6,13 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 15:18:22 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:35:58 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
 
-Request::Request(const std::string &request) {
+Request::Request(const std::string &request) : _contentLength(-1) {
 	std::stringstream ss(request);
 
 	if (!std::getline(ss, _startLine)) {
@@ -32,15 +32,28 @@ Request::Request(const std::string &request) {
 		}
 	}
 
-	std::string bodyLine;
+	std::string	bodyLine;
+	long		bodyLen = 0;
 	while (std::getline(ss, bodyLine)) {
 		if (_headers.find("content-type") == _headers.end()) {
 			_response = "Body present but Content-Type header is missing.";
 			_resCode = 400;
 			return ;
 		}
-		_body += bodyLine + '\n';
+
+		size_t line_len = bodyLine.length();
+		for (size_t i = 0; i < line_len; i++) {
+			if (bodyLen == _contentLength)
+				break ;
+			_body += bodyLine[i];
+			bodyLen++;
+		}
+		if (bodyLen != _contentLength) {
+			_body += '\n';
+			bodyLen++;
+		}
 	}
+	_checkBody();
 }
 
 Request::~Request() {}
@@ -112,6 +125,18 @@ bool Request::_addHeader(const std::string &headerLine) {
 	toLower(value);
 	if (!isValidValue(value))
 		return false;
+
+	if (key == "content-length") {
+		size_t valueLen = value.length();
+		for (size_t i = 0; i < valueLen; i++)
+			if (!std::isdigit(value[i]))
+				return false;
+		if (valueLen > 10)
+			return false;
+		_contentLength = atol(value.c_str());
+		if (_contentLength > INT_MAX)
+			return false;
+	}
 
 	_headers[key] = value;
 	return true;
