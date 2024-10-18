@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 15:17:49 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 16:03:41 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,22 @@
 
 Request::Request(const int &fd) : _contentLength(-1) {
 	std::string	request;
+	std::string	body;
 	int			ret;
 	char		buffer[30000];
 	bool		isBeginning = true;
 
 	std::stringstream ss(request);
-	while ((ret = read(fd, buffer, 1024)) > 0) {
-		request.append(buffer, ret);
+	while ((ret = read(fd, buffer, 30000)) > 0) {
+		const char *end = std::strstr(buffer, "\r\n\r\n");
+		if (isBeginning && !end)
+			request.append(buffer);
+		else if (end) {
+			request.append(buffer, end - buffer);
+			isBeginning = false;
+			body.append(buffer, end + 4, std::string::npos);
+		} else
+			body.append(buffer);
 
 		if (isBeginning) {
 			if (!std::getline(ss, _startLine)) {

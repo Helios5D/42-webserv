@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/18 11:08:14 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 16:01:10 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,17 @@ int main(int argc, char **argv) {
 	}
 	catch (std::exception &e) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
+		return 1;
 	}
 
 	Cluster cluster(config);
+
+	try {
+		cluster.start();
+	}
+	catch (std::exception &e) {
+		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
+	}
 
 	return 0;
 }

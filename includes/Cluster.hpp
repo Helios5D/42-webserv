@@ -6,7 +6,7 @@ class Cluster {
 	private:
 		std::vector<Server>			_servers;
 		std::vector<struct pollfd>	_poll_fds;
-		std::map<int, Server>		_client_to_server;
+		std::map<int, Server*>		_client_to_server;
 		int							_epoll_fd;
 	public:
 				Cluster(t_cluster_config);

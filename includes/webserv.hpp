@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/18 15:17:38 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 15:53:17 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 #include <sstream>
 #include <fstream>
 #include <climits>
+#include <cstring>
 #include "colors.hpp"
 
 // Prototypes //

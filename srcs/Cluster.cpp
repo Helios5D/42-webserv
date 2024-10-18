@@ -1,4 +1,5 @@
 #include "webserv.hpp"
+// #include "Request.hpp"
 #include "Cluster.hpp"
 
 bool running = false;
@@ -23,7 +24,7 @@ Cluster::~Cluster()
 {}
 
 bool Cluster::isServerFd(int fd) {
-	for (int i = 0; i < _servers.size(); i++) {
+	for (size_t i = 0; i < _servers.size(); i++) {
 		if (_servers[i].getFd() == fd)
 			return true;
 	}
@@ -31,15 +32,15 @@ bool Cluster::isServerFd(int fd) {
 }
 
 void Cluster::handleClient(int fd) {
-	for (Server server : _servers) {
-		if (server.getFd() == fd) {
-			int client_fd = server.acceptConnection();
+	for (size_t i = 0; i < _servers.size(); i++) {
+		if (_servers[i].getFd() == fd) {
+			int client_fd = _servers[i].acceptConnection();
 			struct epoll_event event;
-			event.events = EPOLLIN;
+			event.events = EPOLLIN | EPOLLOUT;
 			event.data.fd = fd;
 			if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0)
 				throw std::runtime_error("epoll_ctl failed when adding client");
-			_client_to_server[client_fd] = server;
+			_client_to_server[client_fd] = &_servers[i];
 			break ;
 		}
 	}
@@ -47,6 +48,7 @@ void Cluster::handleClient(int fd) {
 
 void Cluster::handleRequest(int fd) {
 	(void)fd;
+	// Request request(fd);
 }
 
 void Cluster::disconnectClient(int fd) {
@@ -57,16 +59,17 @@ void Cluster::disconnectClient(int fd) {
 }
 
 void Cluster::start() {
-	struct epoll_event events[10];
+	struct epoll_event events[20];
 
-	std::cout << "Launching cluster." << std::endl;
+	std::cout << COL_BLUE << "Launching cluster." << COL_RESET << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++) {
 		_servers[i].init();
 		struct epoll_event event;
-		event.events = EPOLLIN;
+		event.events = EPOLLIN | EPOLLOUT;
 		event.data.fd = _servers[i].getFd();
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].getFd(), &event) < 0)
 			throw std::runtime_error("epoll_ctl failed when adding servers");
+		std::cout << "Server now listening on port " << COL_CYAN << _servers[i].getListen() << COL_RESET << std::endl;
 	}
 
 	running = true;
@@ -74,9 +77,12 @@ void Cluster::start() {
 
 	while (running)
 	{
-		int events_num = epoll_wait(_epoll_fd, events, 10, -1);
-		if (events_num < 0)
+		int events_num = epoll_wait(_epoll_fd, events, 20, -1);
+		if (events_num < 0) {
+			if (!running)
+				break ;
 			throw std::invalid_argument("epoll_wait failed in cluster loop");
+		}
 		for (int i = 0; i < events_num; i++) {
 			if (events[i].events) {
 				int fd = events[i].data.fd;
@@ -87,4 +93,13 @@ void Cluster::start() {
 			}
 		}
 	}
+
+	std::cout << std::endl << COL_BLUE << "Closing server" << COL_RESET << std::endl;
+	for (std::map<int, Server*>::iterator it = _client_to_server.begin(); it != _client_to_server.end(); it++)
+		close(it->first);
+
+	for (size_t i = 0; i < _servers.size(); i++)
+		close(_servers[i].getFd());
+
+	close(_epoll_fd);
 }

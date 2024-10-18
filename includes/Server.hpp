@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 15:17:38 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 16:00:54 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,7 @@ class Server {
 		int		acceptConnection();
 		int		init();
 		int		getFd();
+		int		getListen();
 };
 
 

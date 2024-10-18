@@ -6,14 +6,15 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 15:17:38 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 16:00:54 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
 Server::Server(t_server_config config)
-: _listen(atoi(config.listen.c_str())), _name(config.server_name), _client_max_body_size(config.client_max_body_size), _error_pages(config.error_pages), _server_socket(ServerSocket(_listen))
+:	_listen(atoi(config.listen.substr(config.listen.size() - 4).c_str())),
+	_name(config.server_name), _client_max_body_size(config.client_max_body_size), _error_pages(config.error_pages)
 {}
 
 Server::~Server()
@@ -47,15 +48,17 @@ int	Server::acceptConnection() {
 
 int Server::init() {
 
-	std::cout << COL_BLUE << "Initializing server." << COL_RESET << std::endl;
 	createSocket();
 	bindSocket();
 	listenSocket();
-	std::cout << "Server now listening on port " << COL_CYAN << _listen << COL_RESET << std::endl;
 
 	return _socket_fd;
 }
 
 int Server::getFd() {
 	return _socket_fd;
+}
+
+int Server::getListen() {
+	return _listen;
 }
