@@ -3,34 +3,46 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 17:35:58 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 15:17:49 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
 
-Request::Request(const std::string &request) : _contentLength(-1) {
+Request::Request(const int &fd) : _contentLength(-1) {
+	std::string	request;
+	int			ret;
+	char		buffer[30000];
+	bool		isBeginning = true;
+
 	std::stringstream ss(request);
+	while ((ret = read(fd, buffer, 1024)) > 0) {
+		request.append(buffer, ret);
 
-	if (!std::getline(ss, _startLine)) {
-		_response = "Missing start line.";
-		_resCode = 400;
-		return ;
-	}
-	if (!_checkStartLine())
-		return ;
+		if (isBeginning) {
+			if (!std::getline(ss, _startLine)) {
+				_response = "Missing start line.";
+				_resCode = 400;
+				return ;
+			}
+			if (!_checkStartLine())
+				return ;
 
-	std::string headerLine;
-	while (std::getline(ss, headerLine) && headerLine != "") {
-		if (!_addHeader(headerLine)) {
-			_response = "Malformed header.";
-			_resCode = 400;
-			return ;
+			std::string headerLine;
+			while (std::getline(ss, headerLine) && headerLine != "") {
+				if (!_addHeader(headerLine)) {
+					_response = "Malformed header.";
+					_resCode = 400;
+					return ;
+				}
+			}
 		}
 	}
+	if (ret < 0)
+		throw std::runtime_error("Reading request failed");
 
 	std::string	bodyLine;
 	long		bodyLen = 0;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 17:21:54 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 13:40:48 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 class Request {
 	public:
-		Request(const std::string &request);
+		Request(const int &fd);
 		~Request();
 	private:
 		std::string							_startLine;

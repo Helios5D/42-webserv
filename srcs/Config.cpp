@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 10:39:20 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 15:17:51 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,7 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			location.cgi_extension = line;
 		}
 		else if (line.find("allowed_methods ") == 0) {
-			line = line.substr(15, line.size() - 16);
+			line = line.substr(16, line.size() - 17);
 			std::istringstream iss(line);
 			std::string method;
 			while (std::getline(iss, method, ' '))

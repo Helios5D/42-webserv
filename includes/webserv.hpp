@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/17 17:28:56 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 15:17:38 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/epoll.h>
 #include <csignal>
 #include <poll.h>
 #include <vector>

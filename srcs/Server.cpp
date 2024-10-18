@@ -3,21 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 18:00:06 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 15:17:38 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
-
-bool running = false;
-
-void handleSignal(int signal) {
-	(void)signal;
-	running = false;
-}
 
 Server::Server(t_server_config config)
 : _listen(atoi(config.listen.c_str())), _name(config.server_name), _client_max_body_size(config.client_max_body_size), _error_pages(config.error_pages), _server_socket(ServerSocket(_listen))
@@ -26,72 +19,43 @@ Server::Server(t_server_config config)
 Server::~Server()
 {}
 
-void Server::init() {
-	_server_socket.bindSocket();
-	_server_socket.listenSocket();
-
-	struct pollfd server_poll;
-	server_poll.fd = _server_socket.getFd();
-	server_poll.events = POLLIN;
-
-	_poll_fds.push_back(server_poll);
+void	Server::createSocket() {
+	_socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (_socket_fd < 0)
+		throw std::runtime_error("Server socket creation failed");
+	_socket_addr.sin_family = AF_UNIX;
+	_socket_addr.sin_addr.s_addr = INADDR_ANY;
+	_socket_addr.sin_port = htons(_listen);
 }
 
-void Server::start() {
-
-	std::cout << "Launching server..." << std::endl;
-	init();
-	std::cout << "Listening on port : " << COL_CYAN << _listen << COL_RESET << std::endl;
-
-	running = true;
-	signal(SIGINT, handleSignal);
-	while (running)
-	{
-		if (poll(_poll_fds.data(), _poll_fds.size(), -1) < 0)
-		{
-			if (!running)
-				break ;
-			throw std::runtime_error("Poll failed");
-		}
-
-		for (size_t i = 0; i < _poll_fds.size(); i++) {
-			if (_poll_fds[i].revents) {
-				if (_poll_fds[i].fd == _server_socket.getFd()) {
-					clientConnect();
-				}
-				else {
-					std::string request = readRequest(_poll_fds[i].fd);
-					if (request.empty()) {
-						clientDisconnect(i);
-						i--;
-					}
-					else
-						handleRequest(request);
-				}
-			}
-		}
-	}
-
-	std::cout << COL_BLUE << "Closing server ..." << COL_RESET << std::endl;
-	close(_server_socket.getFd());
-
-	for (size_t i = 1; i < _poll_fds.size(); i++)
-		close(_poll_fds[i].fd);
+void	Server::bindSocket() {
+	if (bind(_socket_fd, (struct sockaddr *)&_socket_addr, sizeof(_socket_addr)) < 0)
+		throw std::runtime_error("Server socket binding failed");
 }
 
-void Server::clientConnect() {
-	int client_fd = _server_socket.acceptConnection();
-	struct pollfd client_poll;
-	client_poll.fd = client_fd;
-	client_poll.events = POLLIN;
-	_poll_fds.push_back(client_poll);
+void	Server::listenSocket() {
+	if (listen(_socket_fd, 10))
+		throw std::runtime_error("Server socket listen failed");
 }
 
-void Server::clientDisconnect(int index) {
-	close(_poll_fds[index].fd);
-	_poll_fds.erase(_poll_fds.begin() + index);
+int	Server::acceptConnection() {
+	int connection_fd = accept(_socket_fd, (struct sockaddr *)&_socket_addr, (socklen_t *)sizeof(_socket_addr));
+	if (connection_fd < 0)
+		throw std::runtime_error("Server socket accept connection failed");
+	return connection_fd;
 }
 
-void Server::handleRequest(std::string request) {
-	(void)request;
+int Server::init() {
+
+	std::cout << COL_BLUE << "Initializing server." << COL_RESET << std::endl;
+	createSocket();
+	bindSocket();
+	listenSocket();
+	std::cout << "Server now listening on port " << COL_CYAN << _listen << COL_RESET << std::endl;
+
+	return _socket_fd;
+}
+
+int Server::getFd() {
+	return _socket_fd;
 }
