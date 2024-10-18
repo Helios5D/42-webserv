@@ -5,11 +5,13 @@ INCLUDES_DIR = includes
 
 SRCS_DIR = srcs
 
-SRCS =	$(addprefix $(SRCS_DIR)/, tools.cpp) \
-		$(addprefix $(SRCS_DIR)/, requestHandler.cpp) \
-		$(addprefix $(SRCS_DIR)/, ServerSocket.cpp) \
-		$(addprefix $(SRCS_DIR)/, Server.cpp) \
+SRCS =	$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
+		$(addprefix $(SRCS_DIR)/, Config.cpp) \
 		$(addprefix $(SRCS_DIR)/, Request.cpp) \
+		$(addprefix $(SRCS_DIR)/, requestHandler.cpp) \
+		$(addprefix $(SRCS_DIR)/, Server.cpp) \
+		$(addprefix $(SRCS_DIR)/, ServerSocket.cpp) \
+		$(addprefix $(SRCS_DIR)/, tools.cpp) \
 		$(addprefix $(SRCS_DIR)/, webserv.cpp) \
 
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)

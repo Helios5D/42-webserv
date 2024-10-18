@@ -3,15 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/17 16:37:29 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 10:41:08 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
-#include "Server.hpp"
+#include "Cluster.hpp"
 
 int main(int argc, char **argv) {
 	std::string	conf_path;
@@ -23,6 +23,17 @@ int main(int argc, char **argv) {
 		conf_path = "./webserv.conf";
 	else
 		conf_path = argv[1];
+
+	t_cluster_config config;
+	try {
+		config = parseConfigFile(conf_path);
+		printClusterConfig(config);
+	}
+	catch (std::exception &e) {
+		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
+	}
+
+	Cluster cluster(config);
 
 	return 0;
 }

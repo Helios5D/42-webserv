@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:21 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 18:00:23 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 10:39:25 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,3 +34,6 @@ typedef struct s_server_config {
 typedef struct s_cluster_config {
 	std::vector<t_server_config>	servers;
 } t_cluster_config;
+
+t_cluster_config parseConfigFile(std::string path);
+void printClusterConfig(const t_cluster_config& cluster);

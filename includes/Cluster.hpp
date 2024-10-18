@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Cluster.hpp"
+#include "Server.hpp"
 
 class Cluster {
 	private:
-		std::vector<Server> servers;
+		std::vector<Server> _servers;
 	public:
 				Cluster(t_cluster_config);
 				~Cluster();
-		void    start();
-}
+		void	start();
+};

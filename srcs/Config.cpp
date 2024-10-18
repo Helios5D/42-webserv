@@ -3,15 +3,53 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/17 17:59:56 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/18 10:39:20 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 #include "Config.hpp"
+
+void printClusterConfig(const t_cluster_config& cluster) {
+	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
+		const t_server_config& server = *it;
+		std::cout << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
+		std::cout << "  Listen: " << server.listen << "\n";
+		std::cout << "  Server Name: " << server.server_name << "\n";
+		std::cout << "  Client Max Body Size: " << server.client_max_body_size << "\n";
+
+		// Print error pages
+		std::cout << "  Error Pages:\n";
+		for (std::map<int, std::string>::const_iterator err_it = server.error_pages.begin(); err_it != server.error_pages.end(); ++err_it) {
+			std::cout << "    Error Code " << err_it->first << ": " << err_it->second << "\n";
+		}
+
+		// Print locations
+		std::cout << "  Locations:\n";
+		for (std::vector<t_location>::const_iterator loc_it = server.locations.begin(); loc_it != server.locations.end(); ++loc_it) {
+			const t_location& location = *loc_it;
+			std::cout << "    Location " << (loc_it - server.locations.begin() + 1) << ":\n";
+			std::cout << "      Path: " << location.path << "\n";
+			std::cout << "      Root: " << location.root << "\n";
+			std::cout << "      Index: " << location.index << "\n";
+			std::cout << "      CGI Extension: " << location.cgi_extension << "\n";
+			std::cout << "      Upload Save: " << location.upload_save << "\n";
+
+			// Print allowed methods
+			std::cout << "      Allowed Methods: ";
+			for (std::vector<std::string>::const_iterator method_it = location.allowed_methods.begin(); method_it != location.allowed_methods.end(); ++method_it) {
+				std::cout << *method_it;
+				if (method_it + 1 != location.allowed_methods.end()) {
+					std::cout << ", ";
+				}
+			}
+			std::cout << "\n";
+		}
+	}
+}
 
 t_location parseLocationBlock(std::stringstream &ss) {
 	t_location location;
@@ -22,31 +60,36 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			continue;
 		else if (line == "}")
 			return location;
-		else if (line.back() != ';')
-			throw std::invalid_argument("Parsing error");
+		else if (line[line.size() - 1] != ';')
+			throw std::invalid_argument("Parsing error at: " + line);
 
-		else if (find("root") == 0) {
-			line = line.substr(4, line.size() - 5);
+		else if (line.find("root ") == 0) {
+			line = line.substr(5, line.size() - 6);
 			location.root = line;
 		}
-		else if (find("index") == 0) {
-			line = line.substr(5, line.size() - 6);
+		else if (line.find("index ") == 0) {
+			line = line.substr(6, line.size() - 7);
 			location.index = line;
 		}
-		else if (find("cgi_extension") == 0) {
-			line = line.substr(13, line.size() - 14);
+		else if (line.find("cgi_extension ") == 0) {
+			line = line.substr(14, line.size() - 15);
 			location.cgi_extension = line;
 		}
-		else if (find("upload_save") == 0) {
-			line = line.substr(11, line.size() - 12);
+		else if (line.find("upload_save ") == 0) {
+			line = line.substr(12, line.size() - 13);
 			location.cgi_extension = line;
 		}
-		else if (find("allowed_methods") == 0) {
+		else if (line.find("allowed_methods ") == 0) {
 			line = line.substr(15, line.size() - 16);
-			split(line, location.allowed_methods, ' ');
+			std::istringstream iss(line);
+			std::string method;
+			while (std::getline(iss, method, ' '))
+				location.allowed_methods.push_back(method);
 		}
+		else
+			throw std::invalid_argument("Parsing error at: " + line);
 	}
-	throw std::invalid_argument("Parsing error");
+	throw std::invalid_argument("Parsing error at: " + line);
 	return location;
 }
 
@@ -57,45 +100,54 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 		trim(line);
 		if (line.empty())
 			continue;
-		if (line.find("location") == 0) {
-			line = line.substr(6);
+		if (line.find("location ") == 0) {
+			line = line.substr(9);
 			trim(line);
-			if (line != "{")
-				throw std::invalid_argument("Parsing error");
-			server_config.locations.push_back(parseLocationBlock(ss));
+			std::istringstream iss(line);
+			std::string path;
+			std::getline(iss, path, ' ');
+			std::string a;
+			std::getline(iss, a, ' ');
+			if (a != "{")
+				throw std::invalid_argument("Parsing error at: " + line);
+			t_location location = parseLocationBlock(ss);
+			location.path = path;
+			server_config.locations.push_back(location);
 		}
 		else if (line == "}")
 			return server_config;
-		else if (line.back() != ';')
-			throw std::invalid_argument("Parsing error");
+		else if (line[line.size() - 1] != ';')
+			throw std::invalid_argument("Parsing error at: " + line);
 
-		else if (find("listen") == 0) {
-			line = line.substr(6, line.size() - 7);
+		else if (line.find("listen ") == 0) {
+			line = line.substr(7, line.size() - 8);
 			server_config.listen = line;
 		}
-		else if (find("server_name") == 0) {
+		else if (line.find("server_name ") == 0) {
+			line = line.substr(12, line.size() - 13);
+			server_config.server_name = line;
+		}
+		else if (line.find("client_max_body_size ") == 0) {
+			line = line.substr(21, line.size() - 22);
+			server_config.client_max_body_size = line;
+		}
+		else if (line.find("error_page ") == 0) {
 			line = line.substr(11, line.size() - 12);
-			server_config.server_name = line;
-		}
-		else if (find("client_max_body_size") == 0) {
-			line = line.substr(20, line.size() - 21);
-			server_config.server_name = line;
-		}
-		else if (find("error_page") == 0) {
-			line = line.substr(10, line.size());
 			for (size_t i = 0; i < 3; i++) {
 				if (!std::isdigit(line[i]))
-					throw std::invalid_argument("Parsing error");
+					throw std::invalid_argument("Parsing error at: " + line);
 			}
-			server_config.error_pages[atoi(line.substr(0, 3))] = line.substr(4, line.size() - 5);
+			server_config.error_pages[atoi(line.substr(0, 3).c_str())] = line.substr(4, line.size() - 4);
 		}
+		else
+			throw std::invalid_argument("Parsing error at: " + line);
 	}
-	throw std::invalid_argument("Parsing error");
+	throw std::invalid_argument("Parsing error at: " + line);
 	return server_config;
 }
 
 t_cluster_config parseConfigFile(std::string path) {
-	std::ifstream conf_file(path);
+	std::ifstream conf_file(path.c_str());
 	std::stringstream ss;
 	t_cluster_config cluster_config;
 	std::string line;
@@ -109,11 +161,11 @@ t_cluster_config parseConfigFile(std::string path) {
 		trim(line);
 		if (line.empty())
 			continue;
-		if (line.find("server") == 0) {
+		if (line.find("server ") == 0) {
 			line = line.substr(6);
 			trim(line);
 			if (line != "{")
-				throw std::invalid_argument("Parsing error");
+				throw std::invalid_argument("Parsing error at: " + line);
 			cluster_config.servers.push_back(parseServerBlock(ss));
 		}
 	}
