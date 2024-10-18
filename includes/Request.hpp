@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 13:40:48 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 16:27:15 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Request {
 		int									_resCode;
 		long								_contentLength;
 
+		bool	_isBody();
 		bool	_checkStartLine();
 		bool	_addHeader(const std::string &headerLine);
 		bool	_checkBody();

@@ -3,56 +3,75 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 16:03:41 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/18 17:11:32 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
 
+bool Request::_isBody() {
+	if (_headers.find("content-type") != _headers.end()
+			&& _headers.find("content-length") != _headers.end())
+		return true;
+
+	return false;
+}
+
 Request::Request(const int &fd) : _contentLength(-1) {
-	std::string	request;
+	std::string	headers;
 	std::string	body;
 	int			ret;
 	char		buffer[30000];
 	bool		isBeginning = true;
 
-	std::stringstream ss(request);
 	while ((ret = read(fd, buffer, 30000)) > 0) {
-		const char *end = std::strstr(buffer, "\r\n\r\n");
-		if (isBeginning && !end)
-			request.append(buffer);
-		else if (end) {
-			request.append(buffer, end - buffer);
-			isBeginning = false;
-			body.append(buffer, end + 4, std::string::npos);
-		} else
-			body.append(buffer);
-
 		if (isBeginning) {
-			if (!std::getline(ss, _startLine)) {
-				_response = "Missing start line.";
-				_resCode = 400;
-				return ;
-			}
-			if (!_checkStartLine())
-				return ;
+			const char *headersEnd = std::strstr(buffer, "\r\n\r\n");
 
-			std::string headerLine;
-			while (std::getline(ss, headerLine) && headerLine != "") {
-				if (!_addHeader(headerLine)) {
-					_response = "Malformed header.";
+			if (!headersEnd)
+				headers.append(buffer, ret);
+			else {
+				isBeginning = false;
+				headers.append(buffer, headersEnd - buffer);
+
+				std::stringstream ss(headers);
+
+				if (!std::getline(ss, _startLine)) {
+					_response = "Missing start line.";
 					_resCode = 400;
 					return ;
 				}
+				if (!_checkStartLine())
+					return ;
+
+				std::string headerLine;
+				while (std::getline(ss, headerLine)) {
+					if (!_addHeader(headerLine)) {
+						_response = "Malformed header.";
+						_resCode = 400;
+						return ;
+					}
+				}
+				//STILL NEED TO CHECK LENGTH OF HEADER WHEN READING
+				if (_isBody()) {
+					int bodyStartIndex = headersEnd - buffer + 4;
+
+					if (_contentLength < ret - bodyStartIndex)
+						body.append(buffer, bodyStartIndex, bodyStartIndex + _contentLength);
+					else
+						body.append(buffer, bodyStartIndex, std::string::npos);
+				}
 			}
-		}
+		} else if (_isBody())
+			body.append(buffer, ret);
 	}
 	if (ret < 0)
 		throw std::runtime_error("Reading request failed");
 
+	/*
 	std::string	bodyLine;
 	long		bodyLen = 0;
 	while (std::getline(ss, bodyLine)) {
@@ -75,6 +94,7 @@ Request::Request(const int &fd) : _contentLength(-1) {
 		}
 	}
 	_checkBody();
+	*/
 }
 
 Request::~Request() {}
