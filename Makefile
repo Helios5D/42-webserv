@@ -11,8 +11,7 @@ SRCS =	$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
 		$(addprefix $(SRCS_DIR)/, Server.cpp) \
 		$(addprefix $(SRCS_DIR)/, tools.cpp) \
 		$(addprefix $(SRCS_DIR)/, webserv.cpp) \
-
-#$(addprefix $(SRCS_DIR)/, Request.cpp) \
+		$(addprefix $(SRCS_DIR)/, Request.cpp) \
 
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
 

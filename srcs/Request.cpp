@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 17:11:32 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:52:25 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,16 +23,18 @@ bool Request::_isBody() {
 Request::Request(const int &fd) : _contentLength(-1) {
 	std::string	headers;
 	std::string	body;
-	int			ret;
-	char		buffer[30000];
+	int			bytesRead;
+	int			bufferSize = 30000;
+	char		buffer[bufferSize];
 	bool		isBeginning = true;
+	size_t		bodyLength = 0;
 
-	while ((ret = read(fd, buffer, 30000)) > 0) {
+	while ((bytesRead = read(fd, buffer, bufferSize)) > 0 && (isBeginning || bodyLength < (unsigned long)_contentLength)) {
 		if (isBeginning) {
 			const char *headersEnd = std::strstr(buffer, "\r\n\r\n");
 
 			if (!headersEnd)
-				headers.append(buffer, ret);
+				headers.append(buffer, bytesRead);
 			else {
 				isBeginning = false;
 				headers.append(buffer, headersEnd - buffer);
@@ -55,46 +57,31 @@ Request::Request(const int &fd) : _contentLength(-1) {
 						return ;
 					}
 				}
-				//STILL NEED TO CHECK LENGTH OF HEADER WHEN READING
+
 				if (_isBody()) {
 					int bodyStartIndex = headersEnd - buffer + 4;
 
-					if (_contentLength < ret - bodyStartIndex)
-						body.append(buffer, bodyStartIndex, bodyStartIndex + _contentLength);
+					if (_contentLength < bytesRead - bodyStartIndex)
+						body.append(buffer, bodyStartIndex, _contentLength);
 					else
 						body.append(buffer, bodyStartIndex, std::string::npos);
+
+					bodyLength = _body.length();
 				}
 			}
-		} else if (_isBody())
-			body.append(buffer, ret);
+		} else if (_isBody()) {
+			if ((unsigned long)_contentLength > bodyLength) {
+				if ((unsigned long)_contentLength < bodyLength + bytesRead)
+					body.append(buffer, _contentLength - bodyLength);
+				else
+					body.append(buffer);
+
+				bodyLength = _body.length();
+			}
+		}
 	}
-	if (ret < 0)
+	if (bytesRead < 0)
 		throw std::runtime_error("Reading request failed");
-
-	/*
-	std::string	bodyLine;
-	long		bodyLen = 0;
-	while (std::getline(ss, bodyLine)) {
-		if (_headers.find("content-type") == _headers.end()) {
-			_response = "Body present but Content-Type header is missing.";
-			_resCode = 400;
-			return ;
-		}
-
-		size_t line_len = bodyLine.length();
-		for (size_t i = 0; i < line_len; i++) {
-			if (bodyLen == _contentLength)
-				break ;
-			_body += bodyLine[i];
-			bodyLen++;
-		}
-		if (bodyLen != _contentLength) {
-			_body += '\n';
-			bodyLen++;
-		}
-	}
-	_checkBody();
-	*/
 }
 
 Request::~Request() {}
