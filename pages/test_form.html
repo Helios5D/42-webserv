@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test Upload</title>
+	<style>
+		body {
+			background-color: #f8f9fa;
+			color: #333;
+			font-family: Arial, sans-serif;
+			padding: 30px;
+		}
+		div {
+			margin-left: 10%;
+			width: 300px;
+		}
+	</style>
+</head>
+
+<body>
+	<div>
+		<h1> Test Form </h1>
+		<form action="/" method="POST">
+			<p> First Name </p>
+			<input type="text" name="first_name">
+			<br>
+			<p> Last Name </p>
+			<input type="text" name="last_name">
+			<br>
+			<p> Gender </p>
+			<input type="radio" name="gender" value="male" required> Male
+			<input type="radio" name="gender" value="female"> Female
+			<input type="radio" name="gender" value="female"> Other
+			<p> Birthday </p>
+			<input type="date" name="birthday" required>
+			<br>
+			<p> Height (cm) </p>
+			<input type="number" name="height" required>
+			<br>
+			<p> Weight (kg) </p>
+			<input type="number" name="weight" required>
+			<br>
+			<p> Level of activity </p>
+			<select name="activity" required>
+				<option value="sedentary">Sedentary</option>
+				<option value="lightly_active">Lightly active</option>
+				<option value="moderately_active">Moderately active</option>
+				<option value="very_active">Very active</option>
+				<option value="super_active">Super active</option>
+			</select>
+			<br> <br>
+			<button type="submit">Upload</button>
+	<div>
+</body>
+</html>
