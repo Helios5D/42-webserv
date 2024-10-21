@@ -1,14 +1,19 @@
-import cgi, cgitb
-from datetime import date
+import cgi
+from datetime import datetime, date
+
+cgi.enable()
 
 form = cgi.FieldStorage()
 
 first_name = form.getvalue('first_name')
 last_name = form.getvalue('last_name')
 gender = form.getvalue('gender')
-birthdate = form.getvalue('birthday')
-height = form.getvalue('height')
-weight = form.getvalue('weight')
+
+birthdate_str = form.getvalue('birthday')
+birthdate = datetime.strptime(birthdate_str, '%Y-%m-%d').date()
+
+height = float(form.getvalue('height'))
+weight = float(form.getvalue('weight'))
 activity = form.getvalue('activity')
 
 today = date.today()
@@ -16,44 +21,43 @@ age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month
 age_days = (today - birthdate).days
 age_weeks = age_days // 7
 age_months = (today.year - birthdate.year) * 12 + today.month - birthdate.month
-bmi = weight / ((height / 100)**2)
-if (gender == "male"):
+
+bmi = weight / ((height / 100) ** 2)
+
+if gender == "male":
 	bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
 else:
 	bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
-if (activity == "sedentary"):
-	tdee_multiplier = 1.2
-elif (activity == "lightly_active"):
-	tdee_multiplier = 1.375
-elif (activity == "moderately_active"):
-	tdee_multiplier = 1.55
-elif (activity == "very_active"):
-	tdee_multiplier = 1.725
-else:
-	tdee_multiplier = 1.9
-tdee = bmr * tdee_multiplier
 
-weight_upper = 18.5 * ((height / 100)**2)
-weight_lower = 24.9 * ((height / 100)**2)
+tdee_multipliers = {
+	"sedentary": 1.2,
+	"lightly_active": 1.375,
+	"moderately_active": 1.55,
+	"very_active": 1.725,
+	"super_active": 1.9
+}
+tdee = bmr * tdee_multipliers[activity]
 
-print ("Content-type:text/html")
+weight_lower = 18.5 * ((height / 100) ** 2)
+weight_upper = 24.9 * ((height / 100) ** 2)
+
+print("Content-type:text/html")
 print()
-print ("<html>")
-print ('<head>')
-print ("<title>Test Form</title>")
-print ('</head>')
-print ('<body>')
-print ("<h1>Hello %s %s, here is some info about you</h1>" % (first_name, last_name))
-print("<p>Calculating your age in years would be too easy")
-print("Age in years: %d<br> Age in days: %d<br>Age in months: %d<br>Age in weeks: %d</p>" % (age, age_days, age_months, age_weeks))
-print("<p>Your current body mass index is %d</p>" % bmi)
-print("<p>Your current basal meteabolic rate is %d</p>" % bmr)
-print("<p>Your daily caloric needs is estimated at %dkcal / day</p>" % tdee)
-if (weight >= weight_upper):
-	print("<p>You are currently overweight and should eat less.</p>");
-elif (weight < weight_lower):
-	print("<p>You are currently underweight and should eat more.</p>");
+print("<html>")
+print("<head>")
+print("<title>Test Form Results</title>")
+print("</head>")
+print("<body>")
+print(f"<h1>Hello {first_name} {last_name}, here is some info about you:</h1>")
+print(f"<p>Age in years: {age}<br>Age in days: {age_days}<br>Age in months: {age_months}<br>Age in weeks: {age_weeks}</p>")
+print(f"<p>Your current body mass index (BMI) is: {bmi:.2f}</p>")
+print(f"<p>Your current basal metabolic rate (BMR) is: {bmr:.2f} kcal/day</p>")
+print(f"<p>Your total daily energy expenditure (TDEE) is: {tdee:.0f} kcal/day</p>")
+if weight >= weight_upper:
+	print("<p>You are currently overweight and should eat less.</p>")
+elif weight < weight_lower:
+	print("<p>You are currently underweight and should eat more.</p>")
 else:
-	print("<p>You weight is within the ideal range!.</p>");
-print ('</body>')
-print ('</html>')
+	print("<p>Your weight is within the ideal range!</p>")
+print("</body>")
+print("</html>")
