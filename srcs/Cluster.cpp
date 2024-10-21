@@ -26,7 +26,7 @@ Cluster::~Cluster()
 void Cluster::displayServerInfo() {
 	std::cout << std::endl << COL_BLUE << "==============================" << std::endl;
 	std::cout << "    🌐 Webserv Cluster 🌐    " << std::endl;
-	std::cout << COL_BLUE << "==============================" << std::endl << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 
 	std::cout << " 🔵 [INFO] Cluster Info" << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++) {
@@ -45,9 +45,10 @@ bool Cluster::isServerFd(int fd) {
 }
 
 void Cluster::handleClient(int fd) {
+	int client_fd = 0;
 	for (size_t i = 0; i < _servers.size(); i++) {
 		if (_servers[i].getFd() == fd) {
-			int client_fd = _servers[i].acceptConnection();
+			client_fd = _servers[i].acceptConnection();
 			struct epoll_event event;
 			event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 			event.data.fd = fd;
@@ -59,8 +60,8 @@ void Cluster::handleClient(int fd) {
 	}
 	std::cout << COL_BLUE << "==============================" << std::endl;
 	std::cout << "    📡 New Client Connection    " << std::endl;
-	std::cout << COL_BLUE << "==============================" << std::endl;
-	std::cout << " 🔵 [INFO] Connection established with client " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _client_to_server[client_fd]->getName() << COL_RESET << std::endl;
 	std::cout << std::endl;
 }
 
@@ -68,7 +69,7 @@ void Cluster::handleResponse(int fd) {
 	(void)fd;
 	// 	std::cout << COL_CYAN << "==============================" << std::endl;
 	// std::cout << "   📤 Outgoing Server Response   " << std::endl;
-	// std::cout << COL_CYAN << "==============================" << std::endl;
+	// std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	// std::cout << " 🔵 [RESPONSE] Status: " << status_code << " (" << status_message << ")"
 	//           << " sent to " << client_ip << std::endl;
 	// std::cout << std::endl;
@@ -77,23 +78,25 @@ void Cluster::handleResponse(int fd) {
 
 void Cluster::handleRequest(int fd) {
 	(void)fd;
-	// Request request(fd);
+	// Request request(fd, _client_to_server[fd]);
 	// std::cout << COL_GREEN << "==============================" << std::endl;
 	// std::cout << "   📥 Incoming Client Request   " << std::endl;
-	// std::cout << COL_GREEN << "==============================" << std::endl;
+	// std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	// std::cout << " 🔵 [REQUEST] " << method << " " << path << " from " << client_ip << std::endl;
 	// std::cout << std::endl;
-
 }
 
-void Cluster::disconnectClient(int fd) {
+void Cluster::disconnectClient(int fd, bool error) {
 	close(fd);
 	_client_to_server.erase(fd);
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing client");
+
 	std::cout << COL_MAGENTA << "==============================" << std::endl;
 	std::cout << "     🔌 Client Disconnected     " << std::endl;
-	std::cout << COL_MAGENTA << "==============================" << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	if (error)
+		std::cout << " 🟡 [WARNING] Client fd error." << std::endl;
 	std::cout << " 🟣 [INFO] Client has disconnected." << std::endl;
 	std::cout << std::endl;
 
@@ -129,8 +132,10 @@ void Cluster::start() {
 			if (isServerFd(fd) && (events[i].events & EPOLLIN))
 				handleClient(fd);
 			else {
+				if (events[i].events & EPOLLERR)
+					disconnectClient(fd, true);
 				if (events[i].events & EPOLLRDHUP)
-					disconnectClient(fd);
+					disconnectClient(fd, false);
 				if (events[i].events & EPOLLIN)
 					handleRequest(fd);
 				if (events[i].events & EPOLLOUT)
@@ -138,9 +143,10 @@ void Cluster::start() {
 			}
 		}
 	}
+	std::cout << std::endl;
 	std::cout << COL_BLUE << "==============================" << std::endl;
-	std::cout << "       🔴 Server Shutdown       " << std::endl;
-	std::cout << COL_BLUE << "==============================" << std::endl;
+	std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	std::cout << " 🔵 [INFO] Shutting down the server gracefully..." << std::endl;
 
 

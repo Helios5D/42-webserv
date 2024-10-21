@@ -17,5 +17,5 @@ class Cluster {
 		void	handleClient(int fd);
 		void	handleRequest(int fd);
 		void	handleResponse(int fd);
-		void	disconnectClient(int fd);
+		void	disconnectClient(int fd, bool error);
 };
