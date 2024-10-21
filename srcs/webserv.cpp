@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/21 11:34:29 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/21 15:19:59 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 	t_cluster_config config;
 	try {
 		config = parseConfigFile(conf_path);
-		printClusterConfig(config);
+		// printClusterConfig(config);
 	}
 	catch (std::exception &e) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 		cluster.start();
 	}
 	catch (std::exception &e) {
-		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
+		std::cerr << COL_RED << std::string("Error: ") + e.what() << COL_RESET << std::endl;
 	}
 
 	return 0;
