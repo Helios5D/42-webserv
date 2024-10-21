@@ -13,7 +13,9 @@ class Cluster {
 				~Cluster();
 		bool	isServerFd(int fd);
 		void	start();
+		void	displayServerInfo();
 		void	handleClient(int fd);
 		void	handleRequest(int fd);
+		void	handleResponse(int fd);
 		void	disconnectClient(int fd);
 };

@@ -3,17 +3,53 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 16:00:54 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/21 12:28:00 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 #include "Config.hpp"
 
-void printClusterConfig(const t_cluster_config& cluster) {
+void fillEmptyFields(t_cluster_config &cluster)
+{
+	for (std::vector<t_server_config>::iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
+		t_server_config& server = *it;
+		if (server.listen.empty())
+			throw std::invalid_argument("Server listen field must be set");
+		if (server.server_name.empty())
+			throw std::invalid_argument("Server name field must be set");
+		if (server.client_max_body_size.empty())
+			server.client_max_body_size = "2M";
+		if (server.error_pages.find(404) == server.error_pages.end())
+			server.error_pages[404] = "/pages/404.html";
+		if (server.error_pages.find(505) == server.error_pages.end())
+			server.error_pages[505] = "/pages/505.html";
+		if (server.locations.empty())
+		{
+			t_location location;
+			location.path = "/";
+			location.root = "/pages";
+			location.index = "index.html";
+			location.allowed_methods.push_back("GET");
+			location.allowed_methods.push_back("POST");
+			location.allowed_methods.push_back("DELETE");
+			location.cgi_extension = ".py";
+			location.upload_save = "/uploads";
+		}
+		else {
+			for (std::vector<t_location>::iterator ite = server.locations.begin(); ite != server.locations.end(); ++ite) {
+				t_location &location = *ite;
+				if (location.path.empty())
+					throw std::invalid_argument("Location path must be set");
+			}
+		}
+	}
+}
+
+void printClusterConfig(const t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
 		const t_server_config& server = *it;
 		std::cout << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
@@ -168,6 +204,12 @@ t_cluster_config parseConfigFile(std::string path) {
 				throw std::invalid_argument("Parsing error at: " + line);
 			cluster_config.servers.push_back(parseServerBlock(ss));
 		}
+	}
+	try {
+		fillEmptyFields(cluster_config);
+	}
+	catch (const std::exception &e) {
+		throw std::runtime_error(std::string("Parsing error: ") + e.what());
 	}
 	return cluster_config;
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 16:00:54 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/21 12:01:40 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@ class Server {
 		int		init();
 		int		getFd();
 		int		getListen();
+		void	displayServerInfo();
 };
 
 
