@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 11:52:25 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/21 17:43:44 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,9 @@ bool Request::_isBody() {
 	return false;
 }
 
-Request::Request(const int &fd) : _contentLength(-1) {
+Request::Request(const int &fd, const Server &server)
+		: _server(server), _contentLength(-1)
+{
 	std::string	headers;
 	std::string	body;
 	int			bytesRead;
@@ -86,12 +88,70 @@ Request::Request(const int &fd) : _contentLength(-1) {
 
 Request::~Request() {}
 
+bool Request::_checkTarget() {
+	std::stringstream	ssTmp(_targetRoute);
+	std::stringstream	ss(_targetRoute);
+	std::string			route("/");
+	std::string			newRoute;
+	std::string			elem;
+
+	if (_targetRoute[0] != '/') {
+		_resCode = 400;
+		_response = "Malformed route.";
+		return false;
+	}
+
+	while (1) {
+		while (ssTmp.get() == '/')
+			ss.get();
+
+		if (!std::getline(ss, elem, '/'))
+			break ;
+		newRoute += '/' + elem;
+
+		std::string tmp;
+		std::getline(ssTmp, tmp, '/');
+
+		route = newRoute;
+	}
+
+	std::vector<t_location>::const_iterator it = _server.getLocations().begin();
+	std::vector<t_location>::const_iterator end = _server.getLocations().end();
+	for (; it != end; it++)
+		if ((*it).path == newRoute)
+			break ;
+
+	if (it != end)
+		_targetFile = (*it).root + '/' + (*it).index;
+	else {
+		for (it = _server.getLocations().begin(); it != end; it++)
+			if ((*it).path == route)
+				break ;
+
+		if (it == end) {
+			_resCode = 404;
+			_response = "Not found.";
+			return false;
+		}
+
+		_targetFile = (*it).root + '/' + elem;
+	}
+
+	if (access(_targetFile.c_str(), F_OK) != 0) {
+		_resCode = 404;
+		_response = "Not found.";
+		return false;
+	}
+
+	return true;
+}
+
 bool Request::_checkStartLine() {
 	std::stringstream ss(_startLine);
 
 	std::string version;
 	std::string tmp;
-	if (!std::getline(ss, _method, ' ') || !std::getline(ss, _target, ' ') || !std::getline(ss, version, ' ') || std::getline(ss, tmp)) {
+	if (!std::getline(ss, _method, ' ') || !std::getline(ss, _targetRoute, ' ') || !std::getline(ss, version, ' ') || std::getline(ss, tmp)) {
 		_resCode = 400;
 		_response = "Malformed start line.";
 		return false;
@@ -102,6 +162,9 @@ bool Request::_checkStartLine() {
 		_response = "The requested HTTP method is not allowed.";
 		return false;
 	}
+
+	if (!_checkTarget())
+		return false;
 
 	if (version != "HTTP/1.1") {
 		_resCode = 505;
@@ -167,9 +230,5 @@ bool Request::_addHeader(const std::string &headerLine) {
 	}
 
 	_headers[key] = value;
-	return true;
-}
-
-bool Request::_checkBody() {
 	return true;
 }
