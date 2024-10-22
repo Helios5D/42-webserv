@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Server.hpp"
-
-class Request;
+#include "Request.hpp"
 
 class Cluster {
 	private:

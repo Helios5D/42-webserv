@@ -84,21 +84,39 @@ void Cluster::handleClient(int fd) {
 
 void Cluster::handleResponse(int fd) {
 	Request *request = _client_responses[fd];
+
+
 	std::cout << COL_CYAN << "==============================" << std::endl;
-	std::cout << "   📤 Outgoing Server Response   " << std::endl;
+	std::cout << "  📤 Outgoing Server Response " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [RESPONSE] Status: " << request->getResCode() << " (" << request->getResponse() << ")" << std::endl;
+	std::cout << " 🔵 [STATUS] " << request->getResCode() << std::endl;
+	std::cout << " 🔵 [RESPONSE] (" << request->getResponse() << ")" << std::endl;
+
+	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
+	// std::cout << "[HEADERS] " << std::endl;
+
+	std::map<std::string, std::string> headers = request->getHeaders();
+	std::map<std::string, std::string>::const_iterator it = headers.begin();
+	std::map<std::string, std::string>::const_iterator end = headers.end();
+
+	for (; it != end; it++)
+		std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
+
+	// std::cout << "[BODY] " << request->getBody() << std::endl;
+
 	std::cout << std::endl;
+	delete request;
+	_client_responses.erase(fd);
 }
 
 void Cluster::handleRequest(int fd) {
-	Request request(fd, *_client_to_server[fd]);
+	Request *request = new Request(fd, *_client_to_server[fd]);
 	std::cout << COL_GREEN << "==============================" << std::endl;
-	std::cout << "   📥 Incoming Client Request   " << std::endl;
+	std::cout << "  📥 Incoming Client Request  " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [REQUEST] " << request.getMethod() << std::endl;
+	std::cout << " 🔵 [REQUEST] " << request->getMethod() << std::endl;
 	std::cout << std::endl;
-	_client_responses[fd] = &request;
+	_client_responses[fd] = request;
 
 	struct epoll_event event;
 	event.events = EPOLLOUT | EPOLLRDHUP;
@@ -108,13 +126,13 @@ void Cluster::handleRequest(int fd) {
 }
 
 void Cluster::disconnectClient(int fd, bool error) {
-	close(fd);
-	_client_to_server.erase(fd);
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing client");
 
+	close(fd);
+	_client_to_server.erase(fd);
 	std::cout << COL_MAGENTA << "==============================" << std::endl;
-	std::cout << "     🔌 Client Disconnected     " << std::endl;
+	std::cout << "    🔌 Client Disconnected    " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	if (error)
 		std::cout << " 🟡 [WARNING] Client fd error." << std::endl;
@@ -160,8 +178,10 @@ void Cluster::start() {
 				if (events[i].events & EPOLLIN) {
 					handleRequest(fd);
 				}
-				if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
+				if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
 					handleResponse(fd);
+					//disconnectClient(fd, false);
+				}
 			}
 		}
 	}
