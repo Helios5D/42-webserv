@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 15:02:06 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/22 17:32:49 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ class Server {
 		const std::string				&getPort() const ;
 		const std::string				&getName() const;
 		const std::vector<t_location>	&getLocations() const;
+		Server 							&operator=(const Server &rhs);
 		void							displayServerInfo();
 		void							setNonBlocking(int fd);
 };

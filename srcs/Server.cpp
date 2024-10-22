@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 15:02:06 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/22 17:32:49 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,12 +49,17 @@ void	Server::createSocket() {
 	if ((status = getaddrinfo(_ip.c_str(), _port.c_str(), &hints, &res)) != 0) {
 		throw std::runtime_error(std::string("getaddrinfo failed: ") + gai_strerror(status));
 	}
-	std::cout << _ip << " " << _port << std::endl;
 
 	_socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (_socket_fd < 0) {
 		freeaddrinfo(res);
 		throw std::runtime_error("Server socket creation failed");
+	}
+
+	int optval = 1;
+	if (setsockopt(_socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+		freeaddrinfo(res);
+		throw std::runtime_error("setsockopt failed");
 	}
 
 	if (bind(_socket_fd, res->ai_addr, res->ai_addrlen) < 0) {
@@ -120,4 +125,19 @@ const std::vector<t_location> &Server::getLocations() const {
 void Server::displayServerInfo() {
 	std::cout << "     🌎 Server " << COL_CYAN << _name << COL_RESET;
 	std::cout << " now listening on port " << COL_CYAN << _port << COL_RESET << std::endl;
+}
+
+Server  &Server::operator=(const Server &rhs) {
+	if (this != &rhs) {
+		this->_socket_fd = rhs._socket_fd;
+		this->_socket_addr = rhs._socket_addr;
+		this->_ip = rhs._ip;
+		this->_port = rhs._port;
+		this->_name = rhs._name;
+		this->_client_max_body_size = rhs._client_max_body_size;
+		this->_error_pages = rhs._error_pages;
+		this->_locations = rhs._locations;
+		this->_poll_fds = rhs._poll_fds;
+	}
+	return *this;
 }
