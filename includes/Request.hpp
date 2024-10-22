@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 16:19:12 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/22 15:51:30 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,19 @@
 class Request {
 	public:
 		Request(const int &fd, const Server &server);
+		Request(const Request &other);
+
+		Request &operator=(const Request &rhs);
+
 		~Request();
+
+		const std::string							&getMethod() const;
+		const std::string							&getTargetFile() const;
+		const std::map<std::string, std::string>	&getHeaders() const;
+		const std::string							&getBody() const;
+		const std::string							&getResponse() const;
+		int											getResCode() const;
+
 	private:
 		const Server						&_server;
 		std::string							_startLine;

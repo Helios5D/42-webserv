@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 17:43:44 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/22 16:50:04 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,9 @@ bool Request::_isBody() {
 }
 
 Request::Request(const int &fd, const Server &server)
-		: _server(server), _contentLength(-1)
+		: _server(server), _resCode(200), _contentLength(-1)
 {
 	std::string	headers;
-	std::string	body;
 	int			bytesRead;
 	int			bufferSize = 30000;
 	char		buffer[bufferSize];
@@ -48,11 +47,14 @@ Request::Request(const int &fd, const Server &server)
 					_resCode = 400;
 					return ;
 				}
-				if (!_checkStartLine())
-					return ;
+				if (_startLine[_startLine.length() - 1] == '\r')
+					_startLine.erase(_startLine.length() - 1);
 
 				std::string headerLine;
 				while (std::getline(ss, headerLine)) {
+					if (headerLine[headerLine.length() - 1] == '\r')
+						headerLine.erase(headerLine.length() - 1);
+
 					if (!_addHeader(headerLine)) {
 						_response = "Malformed header.";
 						_resCode = 400;
@@ -60,13 +62,16 @@ Request::Request(const int &fd, const Server &server)
 					}
 				}
 
+				if (!_checkStartLine())
+					return ;
+
 				if (_isBody()) {
 					int bodyStartIndex = headersEnd - buffer + 4;
 
 					if (_contentLength < bytesRead - bodyStartIndex)
-						body.append(buffer, bodyStartIndex, _contentLength);
+						_body.append(buffer, bodyStartIndex, _contentLength);
 					else
-						body.append(buffer, bodyStartIndex, std::string::npos);
+						_body.append(buffer, bodyStartIndex, std::string::npos);
 
 					bodyLength = _body.length();
 				}
@@ -74,16 +79,14 @@ Request::Request(const int &fd, const Server &server)
 		} else if (_isBody()) {
 			if ((unsigned long)_contentLength > bodyLength) {
 				if ((unsigned long)_contentLength < bodyLength + bytesRead)
-					body.append(buffer, _contentLength - bodyLength);
+					_body.append(buffer, _contentLength - bodyLength);
 				else
-					body.append(buffer);
+					_body.append(buffer);
 
 				bodyLength = _body.length();
 			}
 		}
 	}
-	if (bytesRead < 0)
-		throw std::runtime_error("Reading request failed");
 }
 
 Request::~Request() {}
@@ -91,8 +94,8 @@ Request::~Request() {}
 bool Request::_checkTarget() {
 	std::stringstream	ssTmp(_targetRoute);
 	std::stringstream	ss(_targetRoute);
-	std::string			route("/");
-	std::string			newRoute;
+	std::string			route;
+	std::string			newRoute("/");
 	std::string			elem;
 
 	if (_targetRoute[0] != '/') {
@@ -107,12 +110,15 @@ bool Request::_checkTarget() {
 
 		if (!std::getline(ss, elem, '/'))
 			break ;
-		newRoute += '/' + elem;
+
+		route = newRoute;
+		if (newRoute == "/")
+			newRoute += elem;
+		else
+			newRoute += '/' + elem;
 
 		std::string tmp;
 		std::getline(ssTmp, tmp, '/');
-
-		route = newRoute;
 	}
 
 	std::vector<t_location>::const_iterator it = _server.getLocations().begin();
@@ -122,7 +128,7 @@ bool Request::_checkTarget() {
 			break ;
 
 	if (it != end)
-		_targetFile = (*it).root + '/' + (*it).index;
+		_targetFile = '.' + (*it).root + '/' + (*it).index;
 	else {
 		for (it = _server.getLocations().begin(); it != end; it++)
 			if ((*it).path == route)
@@ -134,7 +140,7 @@ bool Request::_checkTarget() {
 			return false;
 		}
 
-		_targetFile = (*it).root + '/' + elem;
+		_targetFile = '.' + (*it).root + '/' + elem;
 	}
 
 	if (access(_targetFile.c_str(), F_OK) != 0) {
@@ -213,7 +219,7 @@ bool Request::_addHeader(const std::string &headerLine) {
 		return false;
 
 	trim(value);
-	toLower(value);
+	toLower(key);
 	if (!isValidValue(value))
 		return false;
 
@@ -231,4 +237,48 @@ bool Request::_addHeader(const std::string &headerLine) {
 
 	_headers[key] = value;
 	return true;
+}
+
+const std::string &Request::getMethod() const {
+	return _method;
+}
+
+const std::string &Request::getTargetFile() const {
+	return _targetFile;
+}
+
+const std::map<std::string, std::string> &Request::getHeaders() const {
+	return _headers;
+}
+
+const std::string &Request::getBody() const {
+	return _body;
+}
+
+const std::string &Request::getResponse() const {
+	return _response;
+}
+
+int Request::getResCode() const {
+	return _resCode;
+}
+
+Request::Request(const Request &other) : _server(other._server) {
+	*this = other;
+}
+
+Request &Request::operator=(const Request &rhs) {
+	if (this != &rhs) {
+		_startLine = rhs._startLine;
+		_method = rhs._method;
+		_targetRoute = rhs._targetRoute;
+		_targetFile = rhs._targetFile;
+		_headers = rhs._headers;
+		_body = rhs._body;
+		_response = rhs._response;
+		_resCode = rhs._resCode;
+		_contentLength = rhs._contentLength;
+	}
+
+	return *this;
 }
