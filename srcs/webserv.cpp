@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/21 15:19:59 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/22 17:38:18 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,3 +45,39 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
+
+// #include "Request.hpp"
+
+// int main(void) {
+// 	// std::ofstream file("fichier.txt");
+// 	// file << "GET / HTTP/1.1\r\nContent-Type: application/json\r\nUser-Agent: PostmanRuntime/7.28.3\r\nAccept: */*\r\nCache-Control: no-Cache\r\nPostman-Token: 8328391905\r\nHost:jsonplaceholder.typicode.com\r\nAccept-Encoding: gzip,deflate,br\r\nConnection: keep-alive\r\nContent-Length: 56\r\n\r\n{\r\n  \"title\":\"foo\",\r\n  \"body\":\"bar\",\r\n  \"userId\":1\r\n}ubuvbgvgvgvugvgvugvuvuvbuvbyuvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\r\n";
+// 	// file.close();
+// 	// return 0;
+
+// 	t_cluster_config config = parseConfigFile("./webserv.conf");
+// 	Server server = config.servers[0];
+
+// 	int fd = open("fichier.txt", O_RDONLY);
+// 	if (fd < 0) {
+// 		std::cerr << "ERROR" << std::endl;
+// 		return 1;
+// 	}
+// 	Request request(fd, server);
+
+// 	std::cout << "Method: " << request.getMethod() << std::endl;
+// 	std::cout << "Target file: " << request.getTargetFile() << std::endl;
+// 	std::cout << "Headers: " << std::endl;
+
+// 	std::map<std::string, std::string> headers = request.getHeaders();
+// 	std::map<std::string, std::string>::const_iterator it = headers.begin();
+// 	std::map<std::string, std::string>::const_iterator end = headers.end();
+
+// 	for (; it != end; it++)
+// 		std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
+
+// 	std::cout << "Body: " << request.getBody() << std::endl;
+// 	std::cout << "Response code: " << request.getResCode() << std::endl;
+// 	std::cout << "Response: " << request.getResponse() << std::endl;
+
+// 	return 0;
+// }

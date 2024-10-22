@@ -7,7 +7,6 @@ SRCS_DIR = srcs
 
 SRCS =	$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
 		$(addprefix $(SRCS_DIR)/, config.cpp) \
-		$(addprefix $(SRCS_DIR)/, requestHandler.cpp) \
 		$(addprefix $(SRCS_DIR)/, Server.cpp) \
 		$(addprefix $(SRCS_DIR)/, tools.cpp) \
 		$(addprefix $(SRCS_DIR)/, webserv.cpp) \
