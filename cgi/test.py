@@ -46,18 +46,94 @@ print()
 print("<html>")
 print("<head>")
 print("<title>Test Form Results</title>")
+
+print("""
+	<style>
+		body {
+			font-family: 'Arial', sans-serif;
+			background-color: #f4f6f9;
+			color: #333;
+			margin: 0;
+			padding: 20px;
+			line-height: 1.6;
+		}
+		.container {
+			max-width: 800px;
+			margin: 0 auto;
+			background-color: #fff;
+			padding: 30px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+			border-radius: 8px;
+		}
+		h1 {
+			color: #2c3e50;
+			margin-bottom: 20px;
+		}
+		p {
+			margin-bottom: 15px;
+		}
+		.highlight {
+			font-weight: bold;
+			color: #3498db;
+		}
+		.overweight {
+			background-color: #f8d7da;
+			color: #721c24;
+			border-left: 6px solid #f5c6cb;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 20px;
+		}
+		.underweight {
+			background-color: #fff3cd;
+			color: #856404;
+			border-left: 6px solid #ffeeba;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 20px;
+		}
+		.healthy {
+			background-color: #d4edda;
+			color: #155724;
+			border-left: 6px solid #c3e6cb;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 20px;
+		}
+		footer {
+			text-align: center;
+			margin-top: 30px;
+			font-size: 0.9em;
+			color: #888;
+		}
+	</style>
+""")
 print("</head>")
 print("<body>")
-print(f"<h1>Hello {first_name} {last_name}, here is some info about you:</h1>")
-print(f"<p>Age in years: {age}<br>Age in days: {age_days}<br>Age in months: {age_months}<br>Age in weeks: {age_weeks}</p>")
-print(f"<p>Your current body mass index (BMI) is: {bmi:.2f}</p>")
-print(f"<p>Your current basal metabolic rate (BMR) is: {bmr:.2f} kcal/day</p>")
-print(f"<p>Your total daily energy expenditure (TDEE) is: {tdee:.0f} kcal/day</p>")
+print('<div class="container">')
+
+print(f"<h1>Hello <span class=\"highlight\">{first_name} {last_name}</span>, here is some info about you:</h1>")
+print(f"<p>Age in years: <span class=\"highlight\">{age}</span></p>")
+print(f"<p>Age in days: <span class=\"highlight\">{age_days}</span></p>")
+print(f"<p>Age in months: <span class=\"highlight\">{age_months}</span></p>")
+print(f"<p>Age in weeks: <span class=\"highlight\">{age_weeks}</span></p>")
+
+print(f"<p>Your current body mass index (BMI) is: <span class=\"highlight\">{bmi:.2f}</span></p>")
+print(f"<p>Your current basal metabolic rate (BMR) is: <span class=\"highlight\">{bmr:.2f}</span> kcal/day</p>")
+print(f"<p>Your total daily energy expenditure (TDEE) is: <span class=\"highlight\">{tdee:.0f}</span> kcal/day</p>")
+
 if weight >= weight_upper:
-	print("<p>You are currently overweight and should eat less.</p>")
+	suggested_kcal = tdee - 300;
+	print("<div class='overweight'><p>You are currently <span class='highlight'>overweight</span> and should eat less.</p>")
+	print(f"<p>We suggest you to eat around <span class=\"highlight\">{suggested_kcal:.0f}</span> kcal/day to gain some weight.</p></div>")
 elif weight < weight_lower:
-	print("<p>You are currently underweight and should eat more.</p>")
+	suggested_kcal = tdee + 300;
+	print("<div class='underweight'><p>You are currently <span class='highlight'>underweight</span> and should eat more.</p></div>")
+	print(f"<p>We suggest you to eat around <span class=\"highlight\">{suggested_kcal:.0f}</span> kcal/day to lose some weight.</p></div>")
 else:
-	print("<p>Your weight is within the ideal range!</p>")
+	print("<div class='healthy'><p>Your weight is within the ideal range! Keep up the good work!</p></div>")
+	print(f"Keep eating around <span class=\"highlight\">{tdee:.0f}</span> kcal/day and you'll be fine!")
+
+print('</div>')
 print("</body>")
 print("</html>")
