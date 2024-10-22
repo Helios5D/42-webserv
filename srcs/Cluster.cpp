@@ -1,5 +1,5 @@
 #include "webserv.hpp"
-// #include "Request.hpp"
+#include "Request.hpp"
 #include "Cluster.hpp"
 
 bool running = false;
@@ -44,46 +44,67 @@ bool Cluster::isServerFd(int fd) {
 	return false;
 }
 
+void	Cluster::setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw std::runtime_error("Getting flags with fcntl failed");
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		throw std::runtime_error("Setting flags with fcntl failed");
+	}
+}
+
 void Cluster::handleClient(int fd) {
 	int client_fd = 0;
 	for (size_t i = 0; i < _servers.size(); i++) {
 		if (_servers[i].getFd() == fd) {
 			client_fd = _servers[i].acceptConnection();
+			if (client_fd < 0)
+				break ;
+			setNonBlocking(client_fd);
+			if (_client_to_server.find(client_fd) != _client_to_server.end())
+				break ;
+
 			struct epoll_event event;
-			event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
-			event.data.fd = fd;
+			event.events = EPOLLIN | EPOLLRDHUP;
+			event.data.fd = client_fd;
 			if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0)
 				throw std::runtime_error("epoll_ctl failed when adding client");
+
 			_client_to_server[client_fd] = &_servers[i];
+			std::cout << COL_BLUE << "==============================" << std::endl;
+			std::cout << "    📡 New Client Connection    " << std::endl;
+			std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+			std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _client_to_server[client_fd]->getName() << COL_RESET << std::endl;
+			std::cout << std::endl;
 			break ;
 		}
 	}
-	std::cout << COL_BLUE << "==============================" << std::endl;
-	std::cout << "    📡 New Client Connection    " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _client_to_server[client_fd]->getName() << COL_RESET << std::endl;
-	std::cout << std::endl;
 }
 
 void Cluster::handleResponse(int fd) {
-	(void)fd;
-	// 	std::cout << COL_CYAN << "==============================" << std::endl;
-	// std::cout << "   📤 Outgoing Server Response   " << std::endl;
-	// std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	// std::cout << " 🔵 [RESPONSE] Status: " << status_code << " (" << status_message << ")"
-	//           << " sent to " << client_ip << std::endl;
-	// std::cout << std::endl;
-
+	Request *request = _client_responses[fd];
+	std::cout << COL_CYAN << "==============================" << std::endl;
+	std::cout << "   📤 Outgoing Server Response   " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	std::cout << " 🔵 [RESPONSE] Status: " << request->getResCode() << " (" << request->getResponse() << ")" << std::endl;
+	std::cout << std::endl;
 }
 
 void Cluster::handleRequest(int fd) {
-	(void)fd;
-	// Request request(fd, _client_to_server[fd]);
-	// std::cout << COL_GREEN << "==============================" << std::endl;
-	// std::cout << "   📥 Incoming Client Request   " << std::endl;
-	// std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	// std::cout << " 🔵 [REQUEST] " << method << " " << path << " from " << client_ip << std::endl;
-	// std::cout << std::endl;
+	Request request(fd, *_client_to_server[fd]);
+	std::cout << COL_GREEN << "==============================" << std::endl;
+	std::cout << "   📥 Incoming Client Request   " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	std::cout << " 🔵 [REQUEST] " << request.getMethod() << std::endl;
+	std::cout << std::endl;
+	_client_responses[fd] = &request;
+
+	struct epoll_event event;
+	event.events = EPOLLOUT | EPOLLRDHUP;
+	event.data.fd = fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
+		throw std::runtime_error("epoll_ctl failed when modifying client");
 }
 
 void Cluster::disconnectClient(int fd, bool error) {
@@ -136,9 +157,10 @@ void Cluster::start() {
 					disconnectClient(fd, true);
 				if (events[i].events & EPOLLRDHUP)
 					disconnectClient(fd, false);
-				if (events[i].events & EPOLLIN)
+				if (events[i].events & EPOLLIN) {
 					handleRequest(fd);
-				if (events[i].events & EPOLLOUT)
+				}
+				if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
 					handleResponse(fd);
 			}
 		}
