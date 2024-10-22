@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 17:42:56 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/22 15:02:06 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 class Server {
 	private:
 		int 						_socket_fd;
-		sockaddr_in					_socket_addr;
+		struct sockaddr				_socket_addr;
 
 		std::string					_ip;
 		std::string					_port;
@@ -40,6 +40,7 @@ class Server {
 		const std::string				&getName() const;
 		const std::vector<t_location>	&getLocations() const;
 		void							displayServerInfo();
+		void							setNonBlocking(int fd);
 };
 
 

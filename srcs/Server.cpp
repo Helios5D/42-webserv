@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 17:42:58 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/22 15:02:06 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,8 @@ void	Server::createSocket() {
 	int status;
 	if ((status = getaddrinfo(_ip.c_str(), _port.c_str(), &hints, &res)) != 0) {
 		throw std::runtime_error(std::string("getaddrinfo failed: ") + gai_strerror(status));
-}
-
+	}
+	std::cout << _ip << " " << _port << std::endl;
 
 	_socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (_socket_fd < 0) {
@@ -61,7 +61,19 @@ void	Server::createSocket() {
 		freeaddrinfo(res);
 		throw std::runtime_error("Server socket binding failed");
 	}
+	_socket_addr = *res->ai_addr;
 	freeaddrinfo(res);
+	setNonBlocking(_socket_fd);
+}
+
+void	Server::setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw std::runtime_error("Getting flags with fcntl failed");
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		throw std::runtime_error("Setting flags with fcntl failed");
+	}
 }
 
 void	Server::listenSocket() {
@@ -70,9 +82,13 @@ void	Server::listenSocket() {
 }
 
 int	Server::acceptConnection() {
-	int connection_fd = accept(_socket_fd, (struct sockaddr *)&_socket_addr, (socklen_t *)sizeof(_socket_addr));
-	if (connection_fd < 0)
+	socklen_t addr_len = sizeof(_socket_addr);
+	int connection_fd = accept(_socket_fd, &_socket_addr, &addr_len);
+	if (connection_fd < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return -1;
 		throw std::runtime_error("Server socket accept connection failed");
+	}
 	return connection_fd;
 }
 
