@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 16:50:04 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/23 11:27:34 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -230,7 +230,7 @@ bool Request::_addHeader(const std::string &headerLine) {
 				return false;
 		if (valueLen > 10)
 			return false;
-		_contentLength = atol(value.c_str());
+		_contentLength = std::atol(value.c_str());
 		if (_contentLength > INT_MAX)
 			return false;
 	}
