@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   tools.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 15:01:02 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/18 16:00:54 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/23 11:35:15 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,4 +27,10 @@ void toLower(std::string &str) {
 	for (size_t i = 0; i < strLen; i++)
 		if (std::isalpha(str[i]))
 			str[i] = std::tolower(str[i]);
+}
+
+void nbToStr(std::string &str, size_t nb) {
+	std::stringstream ss;
+	ss << nb;
+	str = ss.str();
 }

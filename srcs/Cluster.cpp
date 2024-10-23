@@ -95,12 +95,12 @@ void Cluster::handleResponse(int fd) {
 	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
 	// std::cout << "[HEADERS] " << std::endl;
 
-	std::map<std::string, std::string> headers = request->getHeaders();
-	std::map<std::string, std::string>::const_iterator it = headers.begin();
-	std::map<std::string, std::string>::const_iterator end = headers.end();
+	// std::map<std::string, std::string> headers = request->getHeaders();
+	// std::map<std::string, std::string>::const_iterator it = headers.begin();
+	// std::map<std::string, std::string>::const_iterator end = headers.end();
 
-	for (; it != end; it++)
-		std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
+	// for (; it != end; it++)
+	// 	std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
 
 	// std::cout << "[BODY] " << request->getBody() << std::endl;
 

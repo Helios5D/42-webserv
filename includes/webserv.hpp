@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/23 10:32:33 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 11:35:29 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,3 +42,4 @@
 // tools.cpp
 void	trim(std::string &line);
 void	toLower(std::string &str);
+void	nbToStr(std::string &str, size_t nb);
