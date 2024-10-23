@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/23 10:44:01 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 11:55:22 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 14:07:55 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,24 @@ Response::Response(const Server &server)
 Response::~Response() {}
 
 void Response::createResponse() {
+	std::string								codeMessage = "Error";
+	std::map<int, std::string>::iterator	resIt = g_codes_responses.find(_code);
+	std::stringstream						ss;
 
+	if (resIt != g_codes_responses.end())
+		codeMessage = (*resIt).second;
+
+	ss << "HTTP/1.1 " << _code << ' ' << codeMessage << "\r\n";
+
+	std::map<std::string, std::string>::iterator it = _headers.begin();
+	std::map<std::string, std::string>::iterator end = _headers.end();
+
+	for (; it != end; it++)
+		ss << (*it).first << ":" << (*it).second << "\r\n";
+
+	ss << "\r\n" << _body;
+
+	_response = ss.str();
 }
 
 void Response::_replaceBodyMessage() {

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/22 17:38:18 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/23 13:45:47 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
 		return 1;
 	}
+
+	initializeCodesResponses();
 
 	Cluster cluster(config);
 
