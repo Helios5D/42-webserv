@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 11:27:34 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 14:36:13 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ bool Request::_isBody() {
 }
 
 Request::Request(const int &fd, const Server &server)
-		: _server(server), _resCode(200), _contentLength(-1)
+		: _server(server), _response(server), _contentLength(-1)
 {
 	std::string	headers;
 	int			bytesRead;
@@ -43,8 +43,8 @@ Request::Request(const int &fd, const Server &server)
 				std::stringstream ss(headers);
 
 				if (!std::getline(ss, _startLine)) {
-					_response = "Missing start line.";
-					_resCode = 400;
+					_response.setMessage("Missing start line.");
+					_response.setCode(400);
 					return ;
 				}
 				if (_startLine[_startLine.length() - 1] == '\r')
@@ -56,8 +56,8 @@ Request::Request(const int &fd, const Server &server)
 						headerLine.erase(headerLine.length() - 1);
 
 					if (!_addHeader(headerLine)) {
-						_response = "Malformed header.";
-						_resCode = 400;
+						_response.setMessage("Malformed header.");
+						_response.setCode(400);
 						return ;
 					}
 				}
@@ -99,8 +99,8 @@ bool Request::_checkTarget() {
 	std::string			elem;
 
 	if (_targetRoute[0] != '/') {
-		_resCode = 400;
-		_response = "Malformed route.";
+		_response.setMessage("Malformed route.");
+		_response.setCode(400);
 		return false;
 	}
 
@@ -135,8 +135,8 @@ bool Request::_checkTarget() {
 				break ;
 
 		if (it == end) {
-			_resCode = 404;
-			_response = "Not found.";
+			_response.setMessage("The resource you're looking for does not exist.");
+			_response.setCode(404);
 			return false;
 		}
 
@@ -144,8 +144,8 @@ bool Request::_checkTarget() {
 	}
 
 	if (access(_targetFile.c_str(), F_OK) != 0) {
-		_resCode = 404;
-		_response = "Not found.";
+		_response.setMessage("The resource you're looking for does not exist.");
+		_response.setCode(404);
 		return false;
 	}
 
@@ -158,14 +158,14 @@ bool Request::_checkStartLine() {
 	std::string version;
 	std::string tmp;
 	if (!std::getline(ss, _method, ' ') || !std::getline(ss, _targetRoute, ' ') || !std::getline(ss, version, ' ') || std::getline(ss, tmp)) {
-		_resCode = 400;
-		_response = "Malformed start line.";
+		_response.setMessage("Malformed start line.");
+		_response.setCode(400);
 		return false;
 	}
 
 	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-		_resCode = 405;
-		_response = "The requested HTTP method is not allowed.";
+		_response.setMessage("The requested HTTP method is not allowed.");
+		_response.setCode(405);
 		return false;
 	}
 
@@ -173,8 +173,8 @@ bool Request::_checkStartLine() {
 		return false;
 
 	if (version != "HTTP/1.1") {
-		_resCode = 505;
-		_response = "The HTTP version used is not supported by the server.";
+		_response.setMessage("The HTTP version used is not supported by the server.");
+		_response.setCode(505);
 		return false;
 	}
 
@@ -239,6 +239,10 @@ bool Request::_addHeader(const std::string &headerLine) {
 	return true;
 }
 
+void Request::handleRequest() {
+	_response.createResponse();
+}
+
 const std::string &Request::getMethod() const {
 	return _method;
 }
@@ -255,30 +259,6 @@ const std::string &Request::getBody() const {
 	return _body;
 }
 
-const std::string &Request::getResponse() const {
+const Response &Request::getResponse() const {
 	return _response;
-}
-
-int Request::getResCode() const {
-	return _resCode;
-}
-
-Request::Request(const Request &other) : _server(other._server) {
-	*this = other;
-}
-
-Request &Request::operator=(const Request &rhs) {
-	if (this != &rhs) {
-		_startLine = rhs._startLine;
-		_method = rhs._method;
-		_targetRoute = rhs._targetRoute;
-		_targetFile = rhs._targetFile;
-		_headers = rhs._headers;
-		_body = rhs._body;
-		_response = rhs._response;
-		_resCode = rhs._resCode;
-		_contentLength = rhs._contentLength;
-	}
-
-	return *this;
 }

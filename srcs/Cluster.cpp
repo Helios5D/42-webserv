@@ -83,14 +83,16 @@ void Cluster::handleClient(int fd) {
 }
 
 void Cluster::handleResponse(int fd) {
-	Request *request = _client_responses[fd];
-
+	Request			*request = _client_responses[fd];
+	const Response	&response = request->getResponse();
 
 	std::cout << COL_CYAN << "==============================" << std::endl;
 	std::cout << "  📤 Outgoing Server Response " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [STATUS] " << request->getResCode() << std::endl;
-	std::cout << " 🔵 [RESPONSE] (" << request->getResponse() << ")" << std::endl;
+	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
+	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
+
+	std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
 
 	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
 	// std::cout << "[HEADERS] " << std::endl;
@@ -111,6 +113,7 @@ void Cluster::handleResponse(int fd) {
 
 void Cluster::handleRequest(int fd) {
 	Request *request = new Request(fd, *_client_to_server[fd]);
+	request->handleRequest();
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "  📥 Incoming Client Request  " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;

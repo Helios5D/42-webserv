@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/23 10:44:01 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 14:07:55 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 15:02:21 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,15 +27,19 @@ void Response::createResponse() {
 
 	ss << "HTTP/1.1 " << _code << ' ' << codeMessage << "\r\n";
 
+	_createBody();
+
 	std::map<std::string, std::string>::iterator it = _headers.begin();
 	std::map<std::string, std::string>::iterator end = _headers.end();
 
-	for (; it != end; it++)
+	for (; it != end; it++) {
+		std::cerr << "a" << std::endl;
 		ss << (*it).first << ":" << (*it).second << "\r\n";
+	}
 
 	ss << "\r\n" << _body;
 
-	_response = ss.str();
+	_responseStr = ss.str();
 }
 
 void Response::_replaceBodyMessage() {
@@ -49,7 +53,7 @@ void Response::_replaceBodyMessage() {
 	}
 }
 
-void Response::_setBody() {
+void Response::_createBody() {
 	if (_code == 200) {
 
 	} else {
@@ -79,4 +83,24 @@ void Response::_setBody() {
 
 		nbToStr(_headers["content-length"], _body.length());
 	}
+}
+
+void Response::setCode(int code) {
+	_code = code;
+}
+
+void Response::setMessage(std::string message) {
+	_message = message;
+}
+
+int Response::getCode() const {
+	return _code;
+}
+
+const std::string &Response::getMessage() const {
+	return _message;
+}
+
+const std::string &Response::getResponseStr() const {
+	return _responseStr;
 }
