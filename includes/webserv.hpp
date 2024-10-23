@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/21 16:29:27 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 10:32:33 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,9 +39,6 @@
 
 // Prototypes //
 
-// requestHandler.cpp
-std::string	readRequest(int request_fd);
-
 // tools.cpp
-void		trim(std::string &line);
-void		toLower(std::string &str);
+void	trim(std::string &line);
+void	toLower(std::string &str);
