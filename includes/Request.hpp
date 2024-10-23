@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:10:56 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 14:35:15 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 17:04:47 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,4 +44,5 @@ class Request {
 		bool	_checkStartLine();
 		bool	_checkTarget();
 		bool	_addHeader(const std::string &headerLine);
+		void	_handleDelete();
 };

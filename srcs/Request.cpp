@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 16:00:28 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 18:24:14 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -244,6 +244,15 @@ bool Request::_addHeader(const std::string &headerLine) {
 
 void Request::handleRequest() {
 	_response.createResponse();
+}
+
+void Request::_handleDelete() {
+	if (std::remove(_targetFile.c_str()) != 0) {
+		if (errno == ENOENT) {
+			_response.setCode(404);
+			_response.setMessage("");
+		}
+	}
 }
 
 const std::string &Request::getMethod() const {
