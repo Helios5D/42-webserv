@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 14:36:13 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 16:00:28 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,6 +149,7 @@ bool Request::_checkTarget() {
 		return false;
 	}
 
+	_response.setFilePath(_targetFile);
 	return true;
 }
 
@@ -168,6 +169,8 @@ bool Request::_checkStartLine() {
 		_response.setCode(405);
 		return false;
 	}
+
+	_response.setMethod(_method);
 
 	if (!_checkTarget())
 		return false;

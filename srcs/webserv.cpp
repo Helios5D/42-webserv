@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:34 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/23 13:45:47 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 16:52:45 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
 	}
 
 	initializeCodesResponses();
+	initializeContentTypes();
 
 	Cluster cluster(config);
 
