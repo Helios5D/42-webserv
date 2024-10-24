@@ -33,6 +33,20 @@ void fillEmptyFields(t_cluster_config &cluster) {
 					throw std::invalid_argument("Location path must be set");
 				if (location.root.empty())
 					throw std::invalid_argument("Location root must be set");
+				if (location.index.empty())
+					location.index = "index.html";
+				if (location.allowed_methods.empty()) {
+					location.allowed_methods.push_back("GET");
+					location.allowed_methods.push_back("POST");
+					location.allowed_methods.push_back("DELETE");
+				}
+				if (location.cgi_extension.empty())
+					location.cgi_extension = ".py";
+				if (location.upload_save.empty())
+					location.upload_save = "/uploads/";
+				if (location.autoindex.empty())
+					location.autoindex = "off";
+
 			}
 		}
 	}

@@ -10,10 +10,10 @@ class Response {
 
 		void				createResponse();
 
-		void				setCode(int code);
-		void				setMethod(std::string method);
-		void				setFilePath(std::string filePath);
-		void				setMessage(std::string message);
+		void				setCode(const int code);
+		void				setMethod(const std::string &method);
+		void				setFilePath(const std::string &filePath);
+		void				setMessage(const std::string &message);
 
 		int					getCode() const;
 		const std::string	&getMessage() const;
