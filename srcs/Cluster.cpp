@@ -117,7 +117,15 @@ void Cluster::handleResponse(int fd) {
 	// for (; it != end; it++)
 	// 	std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
 
-	// std::cout << "[BODY] " << request->getBody() << std::endl;
+	std::cout << "[BODY] " << request->getBody() << std::endl;
+
+	std::map<std::string, std::string> headers = request->getHeaders();
+	if (headers.find("connection") != headers.end()) {
+		if (headers["connection"] == "close") {
+			std::cout << std::endl;
+			disconnectClient(fd, 0);
+		}
+	}
 
 	std::cout << std::endl;
 	delete request;
@@ -146,7 +154,7 @@ void Cluster::disconnectClient(int fd, bool error) {
 	std::cout << "    🔌 Client Disconnected    " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	if (error)
-		std::cout << " 🟠 [WARNING] Client fd error." << std::endl;
+		std::cout << " 🟠 [WARNING] Unexpected client disconnect." << std::endl;
 	std::cout << " 🟣 [INFO] Client has disconnected." << std::endl;
 	std::cout << std::endl;
 }
