@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 17:46:50 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 09:40:58 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,7 +173,7 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 				if (!std::isdigit(line[i]))
 					throw std::invalid_argument("Parsing error at: " + line);
 			}
-			server_config.error_pages[atoi(line.substr(0, 3).c_str())] = line.substr(4, line.size() - 4);
+			server_config.error_pages[std::atoi(line.substr(0, 3).c_str())] = line.substr(4, line.size() - 4);
 		}
 		else
 			throw std::invalid_argument("Parsing error at: " + line);

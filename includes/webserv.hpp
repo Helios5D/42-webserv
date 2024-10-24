@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/21 16:29:27 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/23 16:15:40 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,9 +39,14 @@
 
 // Prototypes //
 
-// requestHandler.cpp
-std::string	readRequest(int request_fd);
-
 // tools.cpp
-void		trim(std::string &line);
-void		toLower(std::string &str);
+void	trim(std::string &line);
+void	toLower(std::string &str);
+void	nbToStr(std::string &str, size_t nb);
+void	initializeCodesResponses();
+void	initializeContentTypes();
+
+// Globals //
+
+extern std::map<int, std::string> g_codes_responses;
+extern std::map<std::string, std::string> g_content_types;

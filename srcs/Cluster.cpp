@@ -83,24 +83,38 @@ void Cluster::handleClient(int fd) {
 }
 
 void Cluster::handleResponse(int fd) {
-	Request *request = _client_responses[fd];
+	Request			*request = _client_responses[fd];
+	const Response	&response = request->getResponse();
 
+	const std::string message = response.getMessage();
+	size_t bytes_sent = 0;
+	size_t total_sent = 0;
+	size_t total_size = message.size();
+
+	while (total_sent < total_size) {
+		bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
+		if (bytes_sent < 0)
+			throw std::runtime_error("Could not send response to client");
+		total_sent += bytes_sent;
+	}
 
 	std::cout << COL_CYAN << "==============================" << std::endl;
 	std::cout << "  📤 Outgoing Server Response " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [STATUS] " << request->getResCode() << std::endl;
-	std::cout << " 🔵 [RESPONSE] (" << request->getResponse() << ")" << std::endl;
+	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
+	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
+
+	std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
 
 	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
 	// std::cout << "[HEADERS] " << std::endl;
 
-	std::map<std::string, std::string> headers = request->getHeaders();
-	std::map<std::string, std::string>::const_iterator it = headers.begin();
-	std::map<std::string, std::string>::const_iterator end = headers.end();
+	// std::map<std::string, std::string> headers = request->getHeaders();
+	// std::map<std::string, std::string>::const_iterator it = headers.begin();
+	// std::map<std::string, std::string>::const_iterator end = headers.end();
 
-	for (; it != end; it++)
-		std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
+	// for (; it != end; it++)
+	// 	std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
 
 	// std::cout << "[BODY] " << request->getBody() << std::endl;
 
@@ -111,6 +125,7 @@ void Cluster::handleResponse(int fd) {
 
 void Cluster::handleRequest(int fd) {
 	Request *request = new Request(fd, *_client_to_server[fd]);
+	request->handleRequest();
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "  📥 Incoming Client Request  " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;

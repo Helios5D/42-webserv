@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 17:46:28 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 09:41:07 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,6 +121,9 @@ const std::vector<t_location> &Server::getLocations() const {
 	return _locations;
 }
 
+const std::map<int, std::string> &Server::getErrorPages() const {
+	return _error_pages;
+}
 
 void Server::displayServerInfo() {
 	std::cout << "     🌎 Server " << COL_CYAN << _name << COL_RESET;

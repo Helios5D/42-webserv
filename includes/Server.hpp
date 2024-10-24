@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/22 17:42:30 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 09:40:25 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,17 +31,18 @@ class Server {
 		Server(t_server_config config);
 		~Server();
 
-		void							createSocket();
-		void							listenSocket();
-		int								acceptConnection();
-		int								init();
-		int								getFd() const;
-		const std::string				&getPort() const ;
-		const std::string				&getName() const;
-		const std::vector<t_location>	&getLocations() const;
-		Server 							&operator=(const Server &rhs);
-		void							displayServerInfo();
-		void							setNonBlocking(int fd);
+		void								createSocket();
+		void								listenSocket();
+		int									acceptConnection();
+		int									init();
+		int									getFd() const;
+		const std::string					&getPort() const ;
+		const std::string					&getName() const;
+		const std::vector<t_location>		&getLocations() const;
+		const std::map<int, std::string>	&getErrorPages() const;
+		Server 								&operator=(const Server &rhs);
+		void								displayServerInfo();
+		void								setNonBlocking(int fd);
 };
 
 
