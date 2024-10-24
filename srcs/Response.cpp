@@ -60,9 +60,11 @@ void Response::_findContentType() {
 void Response::_createBody() {
 	if (_code == 200) {
 		if (_method == "POST") {
+			_message = "POST request was successfully processed.";
 			_body = "POST request was successfully processed.";
 			_headers["content-type"] = "text/plain";
 		} else if (_method == "DELETE") {
+			_message = "File was successfully deleted.";
 			_body = "File was successfully deleted.";
 			_headers["content-type"] = "text/plain";
 		} else {
@@ -75,6 +77,7 @@ void Response::_createBody() {
 				_body = buf.str();
 
 				_findContentType();
+				_message = "Requested file was successfully returned.";
 				file.close();
 			} else {
 				_code = 404;
