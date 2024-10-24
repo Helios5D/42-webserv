@@ -106,8 +106,6 @@ void Cluster::handleResponse(int fd) {
 	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
 	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
 
-	std::cout << "[BODY] " << request->getBody() << std::endl;
-
 	std::map<std::string, std::string> headers = request->getHeaders();
 	if (headers.find("connection") != headers.end()) {
 		if (headers["connection"] == "close") {

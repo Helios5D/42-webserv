@@ -9,7 +9,8 @@ class Cluster {
 		std::vector<struct pollfd>	_poll_fds;
 		std::map<int, Server*>		_client_to_server;
 		std::map<int, Request*>		_client_responses;
-		std::vector<int>			_cgi_fds;
+		std::map<int, Request*>		_cgi_in;
+		std::map<int, Request*>		_cgi_out;
 		int							_epoll_fd;
 	public:
 				Cluster(t_cluster_config);
@@ -23,6 +24,6 @@ class Cluster {
 		void	handleResponse(int fd);
 		void	disconnectClient(int fd, bool error);
 		void	setNonBlocking(int fd);
-		void	executeCgi(std::string file);
+		void	executeCgi(Request &request);
 		void	closeCluster();
 };
