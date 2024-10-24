@@ -66,7 +66,7 @@ void Cluster::handleClient(int fd) {
 				break ;
 
 			struct epoll_event event;
-			event.events = EPOLLIN | EPOLLRDHUP;
+			event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 			event.data.fd = client_fd;
 			if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0)
 				throw std::runtime_error("epoll_ctl failed when adding client");
@@ -86,13 +86,13 @@ void Cluster::handleResponse(int fd) {
 	Request			*request = _client_responses[fd];
 	const Response	&response = request->getResponse();
 
-	const std::string message = response.getMessage();
-	size_t bytes_sent = 0;
+	std::string message = response.getResponseStr();
 	size_t total_sent = 0;
 	size_t total_size = message.size();
 
 	while (total_sent < total_size) {
-		bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
+		std::cout << message.c_str() + total_sent << std::endl;
+		size_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
 		if (bytes_sent < 0)
 			throw std::runtime_error("Could not send response to client");
 		total_sent += bytes_sent;
@@ -133,11 +133,6 @@ void Cluster::handleRequest(int fd) {
 	std::cout << std::endl;
 	_client_responses[fd] = request;
 
-	struct epoll_event event;
-	event.events = EPOLLOUT | EPOLLRDHUP;
-	event.data.fd = fd;
-	if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
-		throw std::runtime_error("epoll_ctl failed when modifying client");
 }
 
 void Cluster::disconnectClient(int fd, bool error) {
@@ -195,7 +190,7 @@ void Cluster::start() {
 				}
 				if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
 					handleResponse(fd);
-					//disconnectClient(fd, false);
+					// disconnectClient(fd, false);
 				}
 			}
 		}
