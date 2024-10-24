@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 09:40:25 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/24 12:09:26 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ class Server {
 		std::string					_ip;
 		std::string					_port;
 		std::string					_name;
-		std::string					_client_max_body_size;
+		long						_client_max_body_size;
 		std::map<int, std::string>	_error_pages;
 
 		std::vector<t_location>		_locations;
@@ -39,6 +39,7 @@ class Server {
 		const std::string					&getPort() const ;
 		const std::string					&getName() const;
 		const std::vector<t_location>		&getLocations() const;
+		long								getClientMaxBodySize();
 		const std::map<int, std::string>	&getErrorPages() const;
 		Server 								&operator=(const Server &rhs);
 		void								displayServerInfo();

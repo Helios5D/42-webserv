@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 11:45:18 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/24 12:09:50 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,10 @@ const std::string &Server::getName() const {
 
 const std::vector<t_location> &Server::getLocations() const {
 	return _locations;
+}
+
+long Server::getClientMaxBodySize() {
+	return _client_max_body_size;
 }
 
 const std::map<int, std::string> &Server::getErrorPages() const {
