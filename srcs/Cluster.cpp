@@ -91,7 +91,6 @@ void Cluster::handleResponse(int fd) {
 	size_t total_size = message.size();
 
 	while (total_sent < total_size) {
-		std::cout << message.c_str() + total_sent << std::endl;
 		size_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
 		if (bytes_sent < 0)
 			throw std::runtime_error("Could not send response to client");
@@ -104,8 +103,7 @@ void Cluster::handleResponse(int fd) {
 	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
 	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
 
-	std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
-
+	// std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
 	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
 	// std::cout << "[HEADERS] " << std::endl;
 
@@ -118,6 +116,7 @@ void Cluster::handleResponse(int fd) {
 
 	// std::cout << "[BODY] " << request->getBody() << std::endl;
 
+	throw std::exception();
 	std::cout << std::endl;
 	delete request;
 	_client_responses.erase(fd);
@@ -183,27 +182,37 @@ void Cluster::start() {
 			else {
 				if (events[i].events & EPOLLERR)
 					disconnectClient(fd, true);
-				if (events[i].events & EPOLLRDHUP)
+				else if (events[i].events & EPOLLRDHUP)
 					disconnectClient(fd, false);
-				if (events[i].events & EPOLLIN) {
-					handleRequest(fd);
-				}
-				if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
-					handleResponse(fd);
-					// disconnectClient(fd, false);
+				else {
+					if (events[i].events & EPOLLIN) {
+						handleRequest(fd);
+					}
+					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
+						handleResponse(fd);
+						// disconnectClient(fd, false);
+					}
 				}
 			}
 		}
 	}
+
+	closeCluster();
+}
+
+void Cluster::closeCluster() {
+
 	std::cout << std::endl;
 	std::cout << COL_BLUE << "==============================" << std::endl;
 	std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	std::cout << " 🔵 [INFO] Shutting down the server gracefully..." << std::endl;
 
-
 	for (std::map<int, Server*>::iterator it = _client_to_server.begin(); it != _client_to_server.end(); it++)
 		close(it->first);
+
+	for (std::map<int, Request*>::iterator it = _client_responses.begin(); it != _client_responses.end(); it++)
+		delete it->second;
 
 	for (size_t i = 0; i < _servers.size(); i++)
 		close(_servers[i].getFd());

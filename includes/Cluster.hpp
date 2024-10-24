@@ -21,4 +21,5 @@ class Cluster {
 		void	handleResponse(int fd);
 		void	disconnectClient(int fd, bool error);
 		void	setNonBlocking(int fd);
+		void	closeCluster();
 };
