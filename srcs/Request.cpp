@@ -43,11 +43,8 @@ Request::Request(const int &fd, const Server &server)
 					if (headerLine[headerLine.length() - 1] == '\r')
 						headerLine.erase(headerLine.length() - 1);
 
-					if (!_addHeader(headerLine)) {
-						_response.setMessage("Malformed header.");
-						_response.setCode(400);
+					if (!_addHeader(headerLine))
 						return ;
-					}
 				}
 
 				if (!_checkStartLine())
@@ -203,33 +200,45 @@ bool isValidValue(const std::string &value) {
 	return true;
 }
 
+void setMalformedHeaderResponse(Response &response) {
+	response.setMessage("Malformed header.");
+	response.setCode(400);
+}
+
 bool Request::_addHeader(const std::string &headerLine) {
 	std::stringstream	ss(headerLine);
 	std::string			key;
 	std::string			value;
 
 	if (!std::getline(ss, key, ':'))
-		return false;
+		return (setMalformedHeaderResponse(_response), false);
 	std::getline(ss, value);
 
 	if (!isValidKey(key) || _headers.find(key) != _headers.end())
-		return false;
+		return (setMalformedHeaderResponse(_response), false);
 
 	trim(value);
 	toLower(key);
 	if (!isValidValue(value))
-		return false;
+		return (setMalformedHeaderResponse(_response), false);
 
 	if (key == "content-length") {
 		size_t valueLen = value.length();
+
 		for (size_t i = 0; i < valueLen; i++)
 			if (!std::isdigit(value[i]))
-				return false;
+				return (setMalformedHeaderResponse(_response), false);
 		if (valueLen > 10)
-			return false;
+			return (setMalformedHeaderResponse(_response), false);
 		_contentLength = std::atol(value.c_str());
 		if (_contentLength > INT_MAX)
+			return (setMalformedHeaderResponse(_response), false);
+
+		if (_contentLength > _server.getClientMaxBodySize()) {
+			_response.setMessage("Body sent is too large.");
+			_response.setCode(413);
 			return false;
+		}
 	}
 
 	_headers[key] = value;
