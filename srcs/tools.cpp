@@ -34,6 +34,13 @@ void nbToStr(std::string &str, size_t nb) {
 	str = ss.str();
 }
 
+void getFileExtension(const std::string &filePath, std::string &extension) {
+	size_t lastPointIndex = filePath.find_last_of('.');
+
+	if (lastPointIndex != std::string::npos)
+		extension = filePath.substr(lastPointIndex + 1);
+}
+
 void initializeCodesResponses() {
 	g_codes_responses[100] = "Continue";
 	g_codes_responses[101] = "Switching Protocols";

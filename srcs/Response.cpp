@@ -41,12 +41,10 @@ void Response::_replaceBodyMessage() {
 
 void Response::_findContentType() {
 	std::string extension;
-	size_t lastPointIndex = _filePath.find_last_of('.');
+	getFileExtension(_filePath, extension);
 
-	if (lastPointIndex != std::string::npos) {
+	if (!extension.empty()) {
 		std::map<std::string, std::string>::iterator it;
-
-		extension = _filePath.substr(lastPointIndex + 1);
 		it = g_content_types.find(extension);
 
 		if (it != g_content_types.end())

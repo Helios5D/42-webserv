@@ -33,6 +33,7 @@ bool	isNumber(const std::string str);
 void	trim(std::string &line);
 void	toLower(std::string &str);
 void	nbToStr(std::string &str, size_t nb);
+void	getFileExtension(const std::string &filePath, std::string &extension);
 void	initializeCodesResponses();
 void	initializeContentTypes();
 
