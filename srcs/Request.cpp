@@ -246,15 +246,28 @@ bool Request::_addHeader(const std::string &headerLine) {
 }
 
 void Request::handleRequest() {
+	if (_method == "DELETE")
+		_handleDelete();
+
 	_response.createResponse();
 }
 
 void Request::_handleDelete() {
 	if (std::remove(_targetFile.c_str()) != 0) {
-		if (errno == ENOENT) {
+		if (errno == ENOENT || errno == ENOTDIR || errno == EISDIR || errno == EFAULT) {
 			_response.setCode(404);
-			_response.setMessage("");
+			_response.setMessage("The file you want to delete does not exist.");
+		} else if (errno == EACCES || errno == EPERM || errno == EROFS) {
+			_response.setCode(403);
+			_response.setMessage("You are not allowed to delete this file.");
+		} else if (errno == EBUSY) {
+			_response.setCode(423);
+			_response.setMessage("File is locked or is currently in use.");
+		} else {
+			_response.setCode(500);
+			_response.setMessage("File could not be deleted.");
 		}
+		return ;
 	}
 }
 
