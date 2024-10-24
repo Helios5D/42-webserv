@@ -114,19 +114,19 @@ void Response::_createBody() {
 	nbToStr(_headers["content-length"], _body.length());
 }
 
-void Response::setCode(int code) {
+void Response::setCode(const int code) {
 	_code = code;
 }
 
-void Response::setMethod(std::string method) {
+void Response::setMethod(const std::string &method) {
 	_method = method;
 }
 
-void Response::setFilePath(std::string filePath) {
+void Response::setFilePath(const std::string &filePath) {
 	_filePath = filePath;
 }
 
-void Response::setMessage(std::string message) {
+void Response::setMessage(const std::string &message) {
 	_message = message;
 }
 

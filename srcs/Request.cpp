@@ -112,14 +112,8 @@ bool Request::_checkTarget() {
 		if ((*it).path == newRoute)
 			break ;
 
-	if (it != end) {
-		if (std::find((*it).allowed_methods.begin(), (*it).allowed_methods.end(), _method) == (*it).allowed_methods.end()) {
-			_response.setMessage("The requested HTTP method is not allowed.");
-			_response.setCode(405);
-			return false;
-		}
+	if (it != end)
 		_targetFile = '.' + (*it).root + '/' + (*it).index;
-	}
 	else {
 		for (it = _server.getLocations().begin(); it != end; it++)
 			if ((*it).path == route)
@@ -140,6 +134,7 @@ bool Request::_checkTarget() {
 		return false;
 	}
 
+	_location = &(*it);
 	_response.setFilePath(_targetFile);
 	return true;
 }
@@ -246,7 +241,10 @@ bool Request::_addHeader(const std::string &headerLine) {
 }
 
 void Request::handleRequest() {
-	if (_method == "DELETE")
+	if (_location && std::find(_location->allowed_methods.begin(), _location->allowed_methods.end(), _method) == _location->allowed_methods.end()) {
+		_response.setMessage("The requested HTTP method is not allowed.");
+		_response.setCode(405);
+	} else if (_method == "DELETE")
 		_handleDelete();
 
 	_response.createResponse();
@@ -270,6 +268,10 @@ void Request::_handleDelete() {
 		return ;
 	}
 }
+
+// void Request::_handlePost() {
+
+// }
 
 const std::string &Request::getMethod() const {
 	return _method;

@@ -24,6 +24,7 @@ class Request {
 		std::string							_method;
 		std::string							_targetRoute;
 		std::string							_targetFile;
+		const t_location					*_location;
 		std::map<std::string, std::string>	_headers;
 		std::string							_body;
 		long								_contentLength;
