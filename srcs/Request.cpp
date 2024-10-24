@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:12:04 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/23 18:24:14 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 11:22:10 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,8 +127,14 @@ bool Request::_checkTarget() {
 		if ((*it).path == newRoute)
 			break ;
 
-	if (it != end)
+	if (it != end) {
+		if (std::find((*it).allowed_methods.begin(), (*it).allowed_methods.end(), _method) == (*it).allowed_methods.end()) {
+			_response.setMessage("The requested HTTP method is not allowed.");
+			_response.setCode(405);
+			return false;
+		}
 		_targetFile = '.' + (*it).root + '/' + (*it).index;
+	}
 	else {
 		for (it = _server.getLocations().begin(); it != end; it++)
 			if ((*it).path == route)

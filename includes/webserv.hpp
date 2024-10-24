@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/16 11:52:47 by hdaher            #+#    #+#             */
-/*   Updated: 2024/10/23 16:15:40 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 11:16:05 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@
 #include <map>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 #include <climits>
 #include <cstring>
