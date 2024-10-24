@@ -3,6 +3,14 @@
 std::map<int, std::string>			g_codes_responses;
 std::map<std::string, std::string>	g_content_types;
 
+bool isNumber(const std::string str) {
+	size_t size = str.size();
+	for (size_t i = 0; i < size; i++)
+		if (!std::isdigit(str[i]))
+			return false;
+	return true;
+}
+
 void trim(std::string &str) {
 	size_t start = str.find_first_not_of(" \t");
 	if (start == std::string::npos)
