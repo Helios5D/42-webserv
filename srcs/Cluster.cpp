@@ -106,19 +106,6 @@ void Cluster::handleResponse(int fd) {
 	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
 	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
 
-	// std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
-	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
-	// std::cout << "[HEADERS] " << std::endl;
-
-	// std::map<std::string, std::string> headers = request->getHeaders();
-	// std::map<std::string, std::string>::const_iterator it = headers.begin();
-	// std::map<std::string, std::string>::const_iterator end = headers.end();
-
-	// for (; it != end; it++)
-	// 	std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
-
-	std::cout << "[BODY] " << request->getBody() << std::endl;
-
 	std::map<std::string, std::string> headers = request->getHeaders();
 	if (headers.find("connection") != headers.end()) {
 		if (headers["connection"] == "close") {
@@ -197,10 +184,8 @@ void Cluster::start() {
 					if (events[i].events & EPOLLIN) {
 						handleRequest(fd);
 					}
-					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
+					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
 						handleResponse(fd);
-						// disconnectClient(fd, false);
-					}
 				}
 			}
 		}
