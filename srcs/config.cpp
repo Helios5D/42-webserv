@@ -193,6 +193,9 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			if (server_config.client_max_body_size != -1)
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(21, line.size() - 22);
+			for (size_t i = 0; i < line.size(); i++)
+				if (!std::isdigit(line[i]))
+					throw std::invalid_argument("Parsing error: Invalid client max body size value at: " + line);
 			server_config.client_max_body_size = std::atol(line.c_str());
 		}
 		else if (line.find("error_page ") == 0) {
