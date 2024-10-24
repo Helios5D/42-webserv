@@ -93,18 +93,24 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			if (!location.root.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(5, line.size() - 6);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			location.root = line;
 		}
 		else if (line.find("index ") == 0) {
 			if (!location.index.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(6, line.size() - 7);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			location.index = line;
 		}
 		else if (line.find("cgi_extension ") == 0) {
 			if (!location.cgi_extension.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(14, line.size() - 15);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			if (line != ".py" && line != ".php")
 				throw std::invalid_argument("Parsing error: Invalid CGI extension: " + line);
 			location.cgi_extension = line;
@@ -113,12 +119,16 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			if (!location.upload_save.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(12, line.size() - 13);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			location.cgi_extension = line;
 		}
 		else if (line.find("autoindex ") == 0) {
 			if (!location.autoindex.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(10, line.size() - 11);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			if (line != "on" && line != "off")
 				throw std::invalid_argument("Parsing error: Invalid value for autoindex: " + line);
 			location.autoindex = line;
@@ -127,6 +137,8 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			if (!location.allowed_methods.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(16, line.size() - 17);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			std::istringstream iss(line);
 			std::string method;
 			while (std::getline(iss, method, ' ')) {
@@ -173,10 +185,14 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			if (!server_config.port.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(7, line.size() - 8);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			size_t colon = line.find(':');
 			if (colon != std::string::npos) {
 				server_config.ip = line.substr(0, colon);
 				server_config.port = line.substr(colon + 1);
+				if (!isNumber(server_config.port))
+					throw std::invalid_argument("Parsing error: Invalid port: " + server_config.port);
 			}
 			else {
 				server_config.ip = "0.0.0.0";
@@ -187,23 +203,26 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			if (!server_config.server_name.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(12, line.size() - 13);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
 			server_config.server_name = line;
 		}
 		else if (line.find("client_max_body_size ") == 0) {
 			if (server_config.client_max_body_size != -1)
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(21, line.size() - 22);
-			for (size_t i = 0; i < line.size(); i++)
-				if (!std::isdigit(line[i]))
-					throw std::invalid_argument("Parsing error: Invalid client max body size value at: " + line);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
+			if (!isNumber(line))
+				throw std::invalid_argument("Parsing error: Invalid client max body size value at: " + line);
 			server_config.client_max_body_size = std::atol(line.c_str());
 		}
 		else if (line.find("error_page ") == 0) {
 			line = line.substr(11, line.size() - 12);
-			for (size_t i = 0; i < 3; i++) {
-				if (!std::isdigit(line[i]))
-					throw std::invalid_argument("Parsing error at: " + line);
-			}
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
+			if (!isNumber(line.substr(0, 3)))
+				throw std::invalid_argument("Parsing error at: " + line);
 			server_config.error_pages[std::atoi(line.substr(0, 3).c_str())] = line.substr(4, line.size() - 4);
 		}
 		else
@@ -235,6 +254,8 @@ t_cluster_config parseConfigFile(std::string path) {
 				throw std::invalid_argument("Parsing error at: " + line);
 			cluster_config.servers.push_back(parseServerBlock(ss));
 		}
+		else
+			throw std::invalid_argument("Parsing error at: " + line);
 	}
 	try {
 		fillEmptyFields(cluster_config);

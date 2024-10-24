@@ -29,6 +29,7 @@
 // Prototypes //
 
 // tools.cpp
+bool	isNumber(const std::string str);
 void	trim(std::string &line);
 void	toLower(std::string &str);
 void	nbToStr(std::string &str, size_t nb);
