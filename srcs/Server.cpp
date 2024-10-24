@@ -6,28 +6,19 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 09:41:07 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/24 11:45:18 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
 Server::Server(t_server_config config)
-:	_name(config.server_name),
+:	_ip(config.ip), _port(config.port),
+	_name(config.server_name),
 	_client_max_body_size(config.client_max_body_size),
 	_error_pages(config.error_pages),
 	_locations(config.locations)
-{
-	size_t colon = config.listen.find(':');
-	if (colon != std::string::npos) {
-		_ip = config.listen.substr(0, colon);
-		_port = config.listen.substr(colon + 1);
-	}
-	else {
-		_ip = "0.0.0.0";
-		_port = config.listen;
-	}
-}
+{}
 
 Server::~Server()
 {}

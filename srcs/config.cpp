@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 09:40:58 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/24 12:05:26 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 void fillEmptyFields(t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
 		t_server_config& server = *it;
-		if (server.listen.empty())
+		if (server.port.empty())
 			throw std::invalid_argument("Server listen field must be set");
 		if (server.server_name.empty())
 			server.server_name = "webserv.com";
-		if (server.client_max_body_size.empty())
-			server.client_max_body_size = "2M";
+		if (server.client_max_body_size == -1)
+			server.client_max_body_size = 1073741824;
 		if (server.error_pages.find(404) == server.error_pages.end())
 			server.error_pages[404] = "/pages/404.html";
 		if (server.error_pages.find(505) == server.error_pages.end())
@@ -36,6 +36,7 @@ void fillEmptyFields(t_cluster_config &cluster) {
 			location.allowed_methods.push_back("DELETE");
 			location.cgi_extension = ".py";
 			location.upload_save = "/uploads/";
+			location.autoindex = "off";
 		}
 		else {
 			for (std::vector<t_location>::iterator ite = server.locations.begin(); ite != server.locations.end(); ++ite) {
@@ -53,7 +54,8 @@ void printClusterConfig(const t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
 		const t_server_config& server = *it;
 		std::cout << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
-		std::cout << "  Listen: " << server.listen << "\n";
+		std::cout << "  Port: " << server.port << "\n";
+		std::cout << "  Ip: " << server.ip << "\n";
 		std::cout << "  Server Name: " << server.server_name << "\n";
 		std::cout << "  Client Max Body Size: " << server.client_max_body_size << "\n";
 
@@ -109,18 +111,29 @@ t_location parseLocationBlock(std::stringstream &ss) {
 		}
 		else if (line.find("cgi_extension ") == 0) {
 			line = line.substr(14, line.size() - 15);
+			if (line != ".py" && line != ".php")
+				throw std::invalid_argument("Parsing error: Invalid CGI extension: " + line);
 			location.cgi_extension = line;
 		}
 		else if (line.find("upload_save ") == 0) {
 			line = line.substr(12, line.size() - 13);
 			location.cgi_extension = line;
 		}
+		else if (line.find("autoindex ") == 0) {
+			line = line.substr(10, line.size() - 11);
+			if (line != "on" && line != "off")
+				throw std::invalid_argument("Parsing error: Invalid value for autoindex: " + line);
+			location.autoindex = line;
+		}
 		else if (line.find("allowed_methods ") == 0) {
 			line = line.substr(16, line.size() - 17);
 			std::istringstream iss(line);
 			std::string method;
-			while (std::getline(iss, method, ' '))
+			while (std::getline(iss, method, ' ')) {
+				if (method != "GET" && method != "POST" && method != "DELETE")
+					throw std::invalid_argument("Parsing error: Invalid method: " + method);
 				location.allowed_methods.push_back(method);
+			}
 		}
 		else
 			throw std::invalid_argument("Parsing error at: " + line);
@@ -157,7 +170,15 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 
 		else if (line.find("listen ") == 0) {
 			line = line.substr(7, line.size() - 8);
-			server_config.listen = line;
+			size_t colon = line.find(':');
+			if (colon != std::string::npos) {
+				server_config.ip = line.substr(0, colon);
+				server_config.port = line.substr(colon + 1);
+			}
+			else {
+				server_config.ip = "0.0.0.0";
+				server_config.port = line;
+			}
 		}
 		else if (line.find("server_name ") == 0) {
 			line = line.substr(12, line.size() - 13);
@@ -165,7 +186,7 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 		}
 		else if (line.find("client_max_body_size ") == 0) {
 			line = line.substr(21, line.size() - 22);
-			server_config.client_max_body_size = line;
+			server_config.client_max_body_size = std::atol(line.c_str());
 		}
 		else if (line.find("error_page ") == 0) {
 			line = line.substr(11, line.size() - 12);

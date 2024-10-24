@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:21 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/21 13:43:46 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 12:05:30 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,13 +20,15 @@ typedef struct s_location {
 	std::string					index;
 	std::string					cgi_extension;
 	std::string					upload_save;
+	std::string					autoindex;
 	std::vector<std::string>	allowed_methods;
 } t_location;
 
 typedef struct s_server_config {
-	std::string						listen;
+	std::string						ip;
+	std::string						port;
 	std::string						server_name;
-	std::string						client_max_body_size;
+	long							client_max_body_size;
 	std::map<int, std::string>		error_pages;
 	std::vector<t_location>			locations;
 } t_server_config;
