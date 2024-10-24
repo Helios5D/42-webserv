@@ -106,17 +106,6 @@ void Cluster::handleResponse(int fd) {
 	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
 	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
 
-	// std::cout << " 🔵 [RESPONSE]" << std::endl << response.getResponseStr() << std::endl;
-	// std::cout << "[TARGET FILE] " << request->getTargetFile() << std::endl;
-	// std::cout << "[HEADERS] " << std::endl;
-
-	// std::map<std::string, std::string> headers = request->getHeaders();
-	// std::map<std::string, std::string>::const_iterator it = headers.begin();
-	// std::map<std::string, std::string>::const_iterator end = headers.end();
-
-	// for (; it != end; it++)
-	// 	std::cout << "\t" << (*it).first << ":" << (*it).second << std::endl;
-
 	std::cout << "[BODY] " << request->getBody() << std::endl;
 
 	std::map<std::string, std::string> headers = request->getHeaders();
@@ -197,10 +186,8 @@ void Cluster::start() {
 					if (events[i].events & EPOLLIN) {
 						handleRequest(fd);
 					}
-					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()) {
+					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
 						handleResponse(fd);
-						// disconnectClient(fd, false);
-					}
 				}
 			}
 		}
@@ -230,3 +217,28 @@ void Cluster::closeCluster() {
 	std::cout << " 🔵 [INFO] Server shut down succesfully. All connections closed." << std::endl;
 	std::cout << std::endl;
 }
+
+// void Cluster::executeCgi(std::string file) {
+// 	int pipe_in[2];
+// 	int pipe_out[2];
+
+// 	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
+// 		throw std::runtime_error("Pipe failed when executing CGI: " + file);
+
+// 	addToEpoll(pipe_in[1], EPOLLIN | EPOLLOUT);
+// 	addToEpoll(pipe_out[0], EPOLLIN | EPOLLOUT);
+
+// 	int pid = fork();
+// 	if (pid < 0)
+// 		throw std::runtime_error("Fork failed when executing CGI: " + file);
+// 	else if (!pid) {
+// 		close(pipe_in[1]);
+// 		close(pipe_out[0]);
+// 		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
+// 			throw std::runtime_error("Dup2 failed when executing CGI: " + file);
+// 		execve(file.c_str(), nullptr, nullptr);
+// 	}
+// 	else {
+// 		write()
+// 	}
+// }

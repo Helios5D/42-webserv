@@ -34,4 +34,5 @@ class Request {
 		bool	_checkTarget();
 		bool	_addHeader(const std::string &headerLine);
 		void	_handleDelete();
+		void	_handlePost();
 };
