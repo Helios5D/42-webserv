@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:05 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 12:09:50 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 12:12:01 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,7 @@ const std::vector<t_location> &Server::getLocations() const {
 	return _locations;
 }
 
-long Server::getClientMaxBodySize() {
+long Server::getClientMaxBodySize() const {
 	return _client_max_body_size;
 }
 

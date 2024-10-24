@@ -6,7 +6,7 @@
 /*   By: mrochedy <mrochedy@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 18:00:15 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 12:09:26 by mrochedy         ###   ########.fr       */
+/*   Updated: 2024/10/24 12:11:55 by mrochedy         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class Server {
 		const std::string					&getPort() const ;
 		const std::string					&getName() const;
 		const std::vector<t_location>		&getLocations() const;
-		long								getClientMaxBodySize();
+		long								getClientMaxBodySize() const;
 		const std::map<int, std::string>	&getErrorPages() const;
 		Server 								&operator=(const Server &rhs);
 		void								displayServerInfo();
