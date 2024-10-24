@@ -6,7 +6,7 @@
 /*   By: hdaher <hdaher@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 17:59:54 by mrochedy          #+#    #+#             */
-/*   Updated: 2024/10/24 12:05:26 by hdaher           ###   ########.fr       */
+/*   Updated: 2024/10/24 12:17:29 by hdaher           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,30 +102,42 @@ t_location parseLocationBlock(std::stringstream &ss) {
 			throw std::invalid_argument("Parsing error at: " + line);
 
 		else if (line.find("root ") == 0) {
+			if (!location.root.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(5, line.size() - 6);
 			location.root = line;
 		}
 		else if (line.find("index ") == 0) {
+			if (!location.index.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(6, line.size() - 7);
 			location.index = line;
 		}
 		else if (line.find("cgi_extension ") == 0) {
+			if (!location.cgi_extension.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(14, line.size() - 15);
 			if (line != ".py" && line != ".php")
 				throw std::invalid_argument("Parsing error: Invalid CGI extension: " + line);
 			location.cgi_extension = line;
 		}
 		else if (line.find("upload_save ") == 0) {
+			if (!location.upload_save.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(12, line.size() - 13);
 			location.cgi_extension = line;
 		}
 		else if (line.find("autoindex ") == 0) {
+			if (!location.autoindex.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(10, line.size() - 11);
 			if (line != "on" && line != "off")
 				throw std::invalid_argument("Parsing error: Invalid value for autoindex: " + line);
 			location.autoindex = line;
 		}
 		else if (line.find("allowed_methods ") == 0) {
+			if (!location.allowed_methods.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(16, line.size() - 17);
 			std::istringstream iss(line);
 			std::string method;
@@ -144,6 +156,7 @@ t_location parseLocationBlock(std::stringstream &ss) {
 
 t_server_config parseServerBlock(std::stringstream &ss) {
 	t_server_config server_config;
+	server_config.client_max_body_size = -1;
 	std::string line;
 	while (std::getline(ss, line)) {
 		trim(line);
@@ -169,6 +182,8 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			throw std::invalid_argument("Parsing error at: " + line);
 
 		else if (line.find("listen ") == 0) {
+			if (!server_config.port.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(7, line.size() - 8);
 			size_t colon = line.find(':');
 			if (colon != std::string::npos) {
@@ -181,10 +196,14 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			}
 		}
 		else if (line.find("server_name ") == 0) {
+			if (!server_config.server_name.empty())
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(12, line.size() - 13);
 			server_config.server_name = line;
 		}
 		else if (line.find("client_max_body_size ") == 0) {
+			if (server_config.client_max_body_size != -1)
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(21, line.size() - 22);
 			server_config.client_max_body_size = std::atol(line.c_str());
 		}
