@@ -41,6 +41,17 @@ void getFileExtension(const std::string &filePath, std::string &extension) {
 		extension = filePath.substr(lastPointIndex + 1);
 }
 
+void generateFileName(std::string &fileName) {
+	std::stringstream	ss;
+	std::time_t			t = std::time(0);
+	std::tm*			now = std::localtime(&t);
+
+	ss << now->tm_year + 1900 << '-' << now->tm_mon + 1 << '-' << now->tm_mday << '_'
+		<< now->tm_hour << '-' << now->tm_min << '-' << now->tm_sec;
+
+	fileName = ss.str();
+}
+
 void initializeCodesResponses() {
 	g_codes_responses[100] = "Continue";
 	g_codes_responses[101] = "Switching Protocols";

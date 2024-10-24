@@ -22,6 +22,7 @@
 #include <cstring>
 #include <csignal>
 #include <cstdlib>
+#include <ctime>
 
 #include "colors.hpp"
 #include "config.hpp"
@@ -34,6 +35,7 @@ void	trim(std::string &line);
 void	toLower(std::string &str);
 void	nbToStr(std::string &str, size_t nb);
 void	getFileExtension(const std::string &filePath, std::string &extension);
+void	generateFileName(std::string &fileName);
 void	initializeCodesResponses();
 void	initializeContentTypes();
 
