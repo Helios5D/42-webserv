@@ -269,8 +269,16 @@ void Request::_handleDelete() {
 	}
 }
 
-// void Request::_handlePost() {
-// }
+void Request::_handlePost() {
+	std::string extension;
+	getFileExtension(_targetFile, extension);
+
+	if (!extension.empty() && extension == _location->cgi_extension) {
+
+	} else {
+
+	}
+}
 
 const std::string &Request::getMethod() const {
 	return _method;
