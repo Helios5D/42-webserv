@@ -76,12 +76,17 @@ Request::Request(const int &fd, const Server &server, Cluster &cluster)
 
 Request::~Request() {}
 
+bool isDirectory(const std::string &path) {
+	struct stat pathStat;
+
+	if (stat(path.c_str(), &pathStat) != 0)
+		return 0;
+	return S_ISDIR(pathStat.st_mode);
+}
+
 bool Request::_checkTarget() {
-	std::stringstream	ssTmp(_targetRoute);
-	std::stringstream	ss(_targetRoute);
-	std::string			route;
-	std::string			newRoute("/");
-	std::string			elem;
+	std::string	route = _targetRoute;
+	bool		isSlash = false;
 
 	if (_targetRoute[0] != '/') {
 		_response.setMessage("Malformed route.");
@@ -89,53 +94,57 @@ bool Request::_checkTarget() {
 		return false;
 	}
 
-	while (1) {
-		while (ssTmp.get() == '/')
-			ss.get();
-
-		if (!std::getline(ss, elem, '/'))
-			break ;
-
-		route = newRoute;
-		if (newRoute == "/")
-			newRoute += elem;
-		else
-			newRoute += '/' + elem;
-
-		std::string tmp;
-		std::getline(ssTmp, tmp, '/');
+	std::string::iterator routeIt = route.begin();
+	while (routeIt != route.end()) {
+		if (*routeIt == '/') {
+			if (!isSlash) {
+				isSlash = true;
+				routeIt++;
+			} else
+				routeIt = route.erase(routeIt);
+		} else {
+			isSlash = false;
+			routeIt++;
+		}
 	}
 
-	std::vector<t_location>::const_iterator it = _server.getLocations().begin();
-	std::vector<t_location>::const_iterator end = _server.getLocations().end();
-	for (; it != end; it++)
-		if ((*it).path == newRoute)
-			break ;
+	while (!route.empty()) {
+		std::vector<t_location>::const_iterator it = _server.getLocations().begin();
+		std::vector<t_location>::const_iterator end = _server.getLocations().end();
 
-	if (it != end)
-		_targetFile = '.' + (*it).root + '/' + (*it).index;
-	else {
-		for (it = _server.getLocations().begin(); it != end; it++)
+		for (; it != end; it++)
 			if ((*it).path == route)
 				break ;
+		if (it != end) {
+			_targetFile = '.' + (*it).root + '/' + _targetRoute;
 
-		if (it == end) {
-			_response.setMessage("The resource you're looking for does not exist.");
-			_response.setCode(404);
-			return false;
+			if (_targetFile[_targetFile.length() - 1] == '/' || isDirectory(_targetFile))
+				_targetFile += '/' + (*it).index;
+
+			if (access(_targetFile.c_str(), F_OK) != 0) {
+				_response.setMessage("The resource you're looking for does not exist.");
+				_response.setCode(404);
+				return false;
+			}
+
+			_location = &(*it);
+			_response.setFilePath(_targetFile);
+			break ;
 		}
+		if (route == "/" && it == end)
+			break ;
 
-		_targetFile = '.' + (*it).root + '/' + elem;
+		route = route.substr(0, route.find_last_of('/'));
+		if (route.empty())
+			route = '/';
 	}
 
-	if (access(_targetFile.c_str(), F_OK) != 0) {
+	if (!_location) {
 		_response.setMessage("The resource you're looking for does not exist.");
 		_response.setCode(404);
 		return false;
 	}
 
-	_location = &(*it);
-	_response.setFilePath(_targetFile);
 	return true;
 }
 
@@ -274,7 +283,7 @@ void Request::_handlePost() {
 	std::string extension;
 	getFileExtension(_targetFile, extension);
 
-	if (!extension.empty() && extension == _location->cgi_extension) {
+	if (!extension.empty() && '.' + extension == _location->cgi_extension) {
 		_cluster.executeCgi(*this);
 	} else {
 		_response.setCode(405);
