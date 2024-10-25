@@ -13,10 +13,22 @@ void Config::fillEmptyFields(t_cluster_config &cluster) {
 			server.server_name = "webserv.com";
 		if (server.client_max_body_size == -1)
 			server.client_max_body_size = 1073741824;
+		if (server.error_pages.find(400) == server.error_pages.end())
+			server.error_pages[400] = "./web/errors/400.html";
+		if (server.error_pages.find(403) == server.error_pages.end())
+			server.error_pages[403] = "./web/errors/403.html";
 		if (server.error_pages.find(404) == server.error_pages.end())
-			server.error_pages[404] = "/pages/404.html";
+			server.error_pages[404] = "./web/errors/404.html";
+		if (server.error_pages.find(405) == server.error_pages.end())
+			server.error_pages[405] = "./web/errors/405.html";
+		if (server.error_pages.find(413) == server.error_pages.end())
+			server.error_pages[413] = "./web/errors/413.html";
+		if (server.error_pages.find(423) == server.error_pages.end())
+			server.error_pages[423] = "./web/errors/423.html";
+		if (server.error_pages.find(500) == server.error_pages.end())
+			server.error_pages[500] = "./web/errors/500.html";
 		if (server.error_pages.find(505) == server.error_pages.end())
-			server.error_pages[505] = "/pages/505.html";
+			server.error_pages[505] = "./web/errors/505.html";
 		if (server.locations.empty())
 		{
 			t_location location;
