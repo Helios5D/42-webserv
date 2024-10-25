@@ -11,7 +11,6 @@ class Cluster {
 		std::vector<struct pollfd>	_poll_fds;
 		std::map<int, Server*>		_client_to_server;
 		std::map<int, Request*>		_client_responses;
-		std::map<int, Request*>		_cgi_in;
 		std::map<int, Request*>		_cgi_out;
 		int							_epoll_fd;
 	public:
@@ -19,7 +18,6 @@ class Cluster {
 				~Cluster();
 
 		bool	isServerFd(int fd);
-		bool	isCgiIn(int fd);
 		bool	isCgiOut(int fd);
 
 		void	start();
@@ -35,11 +33,6 @@ class Cluster {
 		void	disconnectClient(int fd, bool error);
 
 		void	executeCgi(Request &request);
-		void	writeCgiInput(int fd);
+		// char	**generateEnv(std::string body);
 		void	readCgiOutput(int fd);
-
-		class execveFailException: public std::exception {
-			public:
-				const char* what() const throw();
-		};
 };

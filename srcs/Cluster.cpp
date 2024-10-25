@@ -44,12 +44,6 @@ bool Cluster::isServerFd(int fd) {
 	return false;
 }
 
-bool Cluster::isCgiIn(int fd) {
-	if (_cgi_in.find(fd) != _cgi_in.end())
-		return true;
-	return false;
-}
-
 bool Cluster::isCgiOut(int fd) {
 	if (_cgi_out.find(fd) != _cgi_out.end())
 		return true;
@@ -100,6 +94,20 @@ void Cluster::handleClient(int fd) {
 	}
 }
 
+void Cluster::handleRequest(int fd) {
+	Request	*request = new Request(fd, *_client_to_server[fd], *this);
+
+	request->handleRequest();
+
+	std::cout << COL_GREEN << "==============================" << std::endl;
+	std::cout << "      📥 Client Request       " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << _client_to_server[fd]->getName() << COL_RESET << std::endl;
+	std::cout << std::endl;
+
+	_client_responses[fd] = request;
+}
+
 void Cluster::handleResponse(int fd) {
 	Request			*request = _client_responses[fd];
 	const Response	&response = request->getResponse();
@@ -107,6 +115,8 @@ void Cluster::handleResponse(int fd) {
 	std::string message = response.getResponseStr();
 	size_t total_sent = 0;
 	size_t total_size = message.size();
+
+	std::cout << "RESPONSE : " << message;
 
 	while (total_sent < total_size) {
 		size_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
@@ -132,21 +142,6 @@ void Cluster::handleResponse(int fd) {
 	std::cout << std::endl;
 	delete request;
 	_client_responses.erase(fd);
-}
-
-void Cluster::handleRequest(int fd) {
-	Request	*request = new Request(fd, *_client_to_server[fd], *this);
-
-	request->handleRequest();
-
-	std::cout << COL_GREEN << "==============================" << std::endl;
-	std::cout << "      📥 Client Request       " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << _client_to_server[fd]->getName() << COL_RESET << std::endl;
-	std::cout << std::endl;
-
-	_client_responses[fd] = request;
-
 }
 
 void Cluster::disconnectClient(int fd, bool error) {
@@ -189,8 +184,6 @@ void Cluster::start() {
 			int fd = events[i].data.fd;
 			if (isServerFd(fd) && (events[i].events & EPOLLIN))
 				handleClient(fd);
-			else if (isCgiIn(fd) && events[i].events & EPOLLOUT)
-				writeCgiInput(fd);
 			else if (isCgiOut(fd) && events[i].events & EPOLLIN)
 				readCgiOutput(fd);
 			else {
@@ -201,14 +194,15 @@ void Cluster::start() {
 				else {
 					if (events[i].events & EPOLLIN)
 						handleRequest(fd);
-					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
+					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()
+						&& _cgi_out.empty())
 						handleResponse(fd);
 				}
 			}
 		}
 	}
 
-	closeCluster(true);
+	closeCluster(false);
 }
 
 void Cluster::closeCluster(bool print) {
@@ -236,19 +230,8 @@ void Cluster::closeCluster(bool print) {
 	}
 }
 
-void Cluster::writeCgiInput(int fd) {
-	Request	*request = _cgi_in[fd];
-
-	size_t bytes_written = write(fd, request->getBody().c_str(), request->getBody().size());
-	if (bytes_written < 0)
-		throw std::runtime_error("write failed when writing cgi input");
-	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
-		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
-	close(fd);
-	_cgi_in.erase(fd);
-}
-
 void Cluster::readCgiOutput(int fd) {
+	std::cout << "reading from CGI" << std::endl;
 	Request		*request = _cgi_out[fd];
 	char		buffer[1024];
 	std::string	res;
@@ -258,7 +241,7 @@ void Cluster::readCgiOutput(int fd) {
 		bytes_read = read(fd, buffer, 1024);
 		if (bytes_read < 0)
 			throw std::runtime_error("read failed when reading cgi output");
-		res.append(buffer);
+		res.append(buffer, bytes_read);
 	} while (bytes_read != 0);
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
@@ -269,41 +252,51 @@ void Cluster::readCgiOutput(int fd) {
 }
 
 void Cluster::executeCgi(Request &request) {
-	int			pipe_in[2];
 	int			pipe_out[2];
 	std::string	cgi_file = request.getTargetFile();
 
-	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
+	if (pipe(pipe_out) < 0)
 		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
 
-	addToEpoll(pipe_in[1], EPOLLOUT);
 	addToEpoll(pipe_out[0], EPOLLIN);
 
-	_cgi_in[pipe_in[1]] = &request;
 	_cgi_out[pipe_out[0]] = &request;
+
+	std::cout << request.getBody() << std::endl;
 
 	int	pid = fork();
 	if (pid < 0)
 		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
 	else if (!pid) {
-		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
+		running = false;
+		if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
 			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_file);
 
-		close(pipe_in[1]);
 		close(pipe_out[0]);
-		close(pipe_in[0]);
 		close(pipe_out[1]);
 
+		std::cerr << cgi_file << std::endl;
 		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
-		char* env[] = {NULL};
+		char *env[] = {NULL};
+		// char **env = generateEnv(request.getBody());
 		execve(cgi_file.c_str(), args, env);
-		throw execveFailException();
+		running = false;
+		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
+		exit(1);
 	} else {
-		close(pipe_in[0]);
 		close(pipe_out[1]);
 	}
 }
 
-const char* Cluster::execveFailException::what() const throw() {
-	return "execve failed";
-}
+// char **Cluster::generateEnv(std::string body) {
+// 	std::istringstream iss(body);
+
+// 	std::string var;
+// 	std::vector<char *> env;
+// 	while (getline(iss, var, '&'))
+// 	{
+// 		env.push_back(const_cast<char *>(var.c_str()));
+// 	}
+// 	char **char_env = env.data();
+// 	return char_env;
+// }

@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
 	t_cluster_config config;
 	try {
 		config = Config::parseConfigFile(conf_path);
-		// std::cout << config;
+		std::cout << config;
 	} catch (std::exception &e) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
 		return 1;
@@ -27,8 +27,6 @@ int main(int argc, char **argv) {
 
 	try {
 		cluster.start();
-	} catch (Cluster::execveFailException &e) {
-		cluster.closeCluster(false);
 	} catch (std::exception &e) {
 		std::cerr << COL_RED << std::string("Error: ") + e.what() << COL_RESET << std::endl;
 		cluster.closeCluster(true);
