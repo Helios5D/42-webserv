@@ -14,6 +14,7 @@ class Response {
 		void				setMethod(const std::string &method);
 		void				setFilePath(const std::string &filePath);
 		void				setMessage(const std::string &message);
+		void				setResponseStr(const std::string &responseStr);
 
 		int					getCode() const;
 		const std::string	&getMessage() const;
