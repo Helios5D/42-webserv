@@ -21,7 +21,7 @@
 <body>
 	<div>
 		<h1> Test Form </h1>
-		<form action="/" method="POST">
+		<form action="/cgi/analysis.py" method="POST">
 			<p> First Name </p>
 			<input type="text" name="first_name">
 			<br>
@@ -32,8 +32,8 @@
 			<input type="radio" name="gender" value="male" required> Male
 			<input type="radio" name="gender" value="female"> Female
 			<input type="radio" name="gender" value="other"> Other
-			<p> Birthday </p>
-			<input type="date" name="birthday" required>
+			<p> Birthdate </p>
+			<input type="date" name="birthdate" required>
 			<br>
 			<p> Height (cm) </p>
 			<input type="number" name="height" required>
