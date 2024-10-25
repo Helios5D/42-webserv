@@ -71,6 +71,8 @@ t_location Config::parseLocationBlock(std::stringstream &ss) {
 	t_location	location;
 	std::string	line;
 
+	location.redir_code = -1;
+
 	while (std::getline(ss, line)) {
 		trim(line);
 		if (line.empty())
@@ -129,6 +131,19 @@ t_location Config::parseLocationBlock(std::stringstream &ss) {
 				throw std::invalid_argument("Parsing error: Invalid value for autoindex: " + line);
 
 			location.autoindex = line;
+		} else if (line.find("return ") == 0) {
+			if (location.redir_code != -1)
+				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
+			line = line.substr(7, line.size() - 8);
+			if (line.empty())
+				throw std::invalid_argument("Parsing error: Empty value");
+
+			std::istringstream iss(line);
+			std::string code;
+			getline(iss, code, ' ');
+			location.redir_code = std::atoi(code.c_str());
+			getline(iss, location.redir_path);
 		} else if (line.find("allowed_methods ") == 0) {
 			if (!location.allowed_methods.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
@@ -298,6 +313,8 @@ std::ostream &operator<<(std::ostream &os, const t_cluster_config &cluster) {
 			os << "      Index: " << location.index << std::endl;
 			os << "      CGI Extension: " << location.cgi_extension << std::endl;
 			os << "      Upload Save: " << location.upload_save << std::endl;
+			os << "      Redir path: " << location.redir_path << std::endl;
+			os << "      Redir code: " << location.redir_code << std::endl;
 
 			os << "      Allowed Methods: ";
 			for (std::vector<std::string>::const_iterator method_it = location.allowed_methods.begin(); method_it != location.allowed_methods.end(); ++method_it) {

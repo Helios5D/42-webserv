@@ -10,6 +10,8 @@ typedef struct s_location {
 	std::string					upload_save;
 	std::string					autoindex;
 	std::vector<std::string>	allowed_methods;
+	std::string					redir_path;
+	int							redir_code;
 } t_location;
 
 typedef struct s_server_config {
