@@ -59,6 +59,14 @@ bool Cluster::isCgiOut(int fd) {
 	return false;
 }
 
+void	Cluster::addToEpoll(int fd, __uint32_t events) {
+	struct epoll_event event;
+	event.events = events;
+	event.data.fd = fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
+		throw std::runtime_error("epoll_ctl failed when adding fd");
+}
+
 void	Cluster::setNonBlocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) {
@@ -80,11 +88,7 @@ void Cluster::handleClient(int fd) {
 			if (_client_to_server.find(client_fd) != _client_to_server.end())
 				break ;
 
-			struct epoll_event event;
-			event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
-			event.data.fd = client_fd;
-			if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0)
-				throw std::runtime_error("epoll_ctl failed when adding client");
+			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
 
 			_client_to_server[client_fd] = &_servers[i];
 			std::cout << COL_BLUE << "==============================" << std::endl;
@@ -132,7 +136,7 @@ void Cluster::handleResponse(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Request *request = new Request(fd, *_client_to_server[fd]);
+	Request *request = new Request(fd, *_client_to_server[fd], *this);
 	request->handleRequest();
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;
@@ -163,11 +167,7 @@ void Cluster::start() {
 
 	for (size_t i = 0; i < _servers.size(); i++) {
 		_servers[i].init();
-		struct epoll_event event;
-		event.events = EPOLLIN;
-		event.data.fd = _servers[i].getFd();
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].getFd(), &event) < 0)
-			throw std::runtime_error("epoll_ctl failed when adding servers");
+		addToEpoll(_servers[i].getFd(), EPOLLIN);
 	}
 
 	running = true;
@@ -262,6 +262,7 @@ void Cluster::readCgiOutput(int fd) {
 	close(fd);
 	_cgi_out.erase(fd);
 
+	(void)request;
 	//request->setResponseStr(res);
 }
 
@@ -290,7 +291,9 @@ void Cluster::executeCgi(Request &request) {
 		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
 			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_file);
 
-		execve(cgi_file.c_str(), nullptr, nullptr);
+		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
+		char* env[] = {NULL};
+		execve(cgi_file.c_str(), args, env);
 	}
 	else {
 		close(pipe_in[0]);
