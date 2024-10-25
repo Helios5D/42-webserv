@@ -15,6 +15,7 @@ class Response {
 		void				setFilePath(const std::string &filePath);
 		void				setMessage(const std::string &message);
 		void				setResponseStr(const std::string &responseStr);
+		void				addHeader(const std::string &key, const std::string &value);
 
 		int					getCode() const;
 		const std::string	&getMessage() const;

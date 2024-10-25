@@ -132,6 +132,10 @@ void Response::setResponseStr(const std::string &responseStr) {
 	_responseStr = responseStr;
 }
 
+void Response::addHeader(const std::string &key, const std::string &value) {
+	_headers[key] = value;
+}
+
 int Response::getCode() const {
 	return _code;
 }

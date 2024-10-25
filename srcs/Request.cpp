@@ -116,6 +116,14 @@ bool Request::_checkTarget() {
 			if ((*it).path == route)
 				break ;
 		if (it != end) {
+			_location = &(*it);
+			if (_location->redir_code != -1) {
+				_response.setCode(_location->redir_code);
+				if (!_location->redir_path.empty())
+					_response.addHeader("location", _location->path);
+				return false;
+			}
+
 			_targetFile = '.' + (*it).root + '/' + _targetRoute;
 
 			if (_targetFile[_targetFile.length() - 1] == '/' || isDirectory(_targetFile))
@@ -127,7 +135,6 @@ bool Request::_checkTarget() {
 				return false;
 			}
 
-			_location = &(*it);
 			_response.setFilePath(_targetFile);
 			break ;
 		}
