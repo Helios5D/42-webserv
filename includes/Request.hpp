@@ -2,11 +2,12 @@
 
 #include "webserv.hpp"
 #include "Server.hpp"
+#include "Cluster.hpp"
 #include "Response.hpp"
 
 class Request {
 	public:
-		Request(const int &fd, const Server &server);
+		Request(const int &fd, const Server &server, const Cluster &cluster);
 		~Request();
 
 		void										handleRequest();
@@ -19,6 +20,7 @@ class Request {
 
 	private:
 		const Server						&_server;
+		const Cluster						&_cluster;
 		Response							_response;
 		std::string							_startLine;
 		std::string							_method;

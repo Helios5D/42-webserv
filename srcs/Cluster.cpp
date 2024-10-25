@@ -132,7 +132,7 @@ void Cluster::handleResponse(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Request *request = new Request(fd, *_client_to_server[fd]);
+	Request *request = new Request(fd, *_client_to_server[fd], *this);
 	request->handleRequest();
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;

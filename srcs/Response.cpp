@@ -128,6 +128,10 @@ void Response::setMessage(const std::string &message) {
 	_message = message;
 }
 
+void Response::setResponseStr(const std::string &responseStr) {
+	_responseStr = responseStr;
+}
+
 int Response::getCode() const {
 	return _code;
 }
