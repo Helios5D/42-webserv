@@ -3,6 +3,8 @@
 #include "Server.hpp"
 #include "Request.hpp"
 
+class Request;
+
 class Cluster {
 	private:
 		std::vector<Server>			_servers;

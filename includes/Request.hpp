@@ -5,9 +5,11 @@
 #include "Cluster.hpp"
 #include "Response.hpp"
 
+class Cluster;
+
 class Request {
 	public:
-		Request(const int &fd, const Server &server, const Cluster &cluster);
+		Request(const int &fd, const Server &server, Cluster &cluster);
 		~Request();
 
 		void										handleRequest();
@@ -18,9 +20,11 @@ class Request {
 		const std::string							&getBody() const;
 		const Response								&getResponse() const;
 
+		void										setResponseStr(const std::string &responseStr);
+
 	private:
 		const Server						&_server;
-		const Cluster						&_cluster;
+		Cluster								&_cluster;
 		Response							_response;
 		std::string							_startLine;
 		std::string							_method;

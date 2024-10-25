@@ -234,7 +234,6 @@ void Cluster::closeCluster() {
 	std::cout << std::endl;
 }
 
-
 void Cluster::writeCgiInput(int fd) {
 	Request *request = _cgi_in[fd];
 	write(fd, request->getBody().c_str(), request->getBody().size());
@@ -263,9 +262,8 @@ void Cluster::readCgiOutput(int fd) {
 	_cgi_out.erase(fd);
 
 	(void)request;
-	//request->setResponseStr(res);
+	request->setResponseStr(res);
 }
-
 
 void Cluster::executeCgi(Request &request) {
 	int pipe_in[2];

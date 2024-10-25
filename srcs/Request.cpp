@@ -8,7 +8,7 @@ bool Request::_isBody() {
 	return false;
 }
 
-Request::Request(const int &fd, const Server &server, const Cluster &cluster)
+Request::Request(const int &fd, const Server &server, Cluster &cluster)
 		: _server(server), _cluster(cluster), _response(server), _contentLength(-1)
 {
 	std::string	headers;
@@ -275,7 +275,7 @@ void Request::_handlePost() {
 	getFileExtension(_targetFile, extension);
 
 	if (!extension.empty() && extension == _location->cgi_extension) {
-
+		_cluster.executeCgi(*this);
 	} else {
 		_response.setCode(405);
 		_response.setMessage("A POST request cannot be executed on something else than a CGI.");
@@ -300,4 +300,8 @@ const std::string &Request::getBody() const {
 
 const Response &Request::getResponse() const {
 	return _response;
+}
+
+void Request::setResponseStr(const std::string &responseStr) {
+	_response.setResponseStr(responseStr);
 }
