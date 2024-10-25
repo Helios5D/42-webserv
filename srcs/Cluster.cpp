@@ -47,6 +47,18 @@ bool Cluster::isServerFd(int fd) {
 	return false;
 }
 
+bool Cluster::isCgiIn(int fd) {
+	if (_cgi_in.find(fd) != _cgi_in.end())
+		return true;
+	return false;
+}
+
+bool Cluster::isCgiOut(int fd) {
+	if (_cgi_out.find(fd) != _cgi_out.end())
+		return true;
+	return false;
+}
+
 void	Cluster::setNonBlocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) {
@@ -175,6 +187,12 @@ void Cluster::start() {
 			int fd = events[i].data.fd;
 			if (isServerFd(fd) && (events[i].events & EPOLLIN))
 				handleClient(fd);
+			else if (isCgiIn(fd)) {
+				writeCgiInput(fd);
+			}
+			else if (isCgiOut(fd)) {
+				readCgiOutput(fd);
+			}
 			else {
 				if (events[i].events & EPOLLERR)
 					disconnectClient(fd, true);
@@ -216,27 +234,66 @@ void Cluster::closeCluster() {
 	std::cout << std::endl;
 }
 
-// void Cluster::executeCgi(std::string file) {
-// 	int pipe_in[2];
-// 	int pipe_out[2];
 
-// 	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
-// 		throw std::runtime_error("Pipe failed when executing CGI: " + file);
+void Cluster::writeCgiInput(int fd) {
+	Request *request = _cgi_in[fd];
+	write(fd, request->getBody().c_str(), request->getBody().size());
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
+		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
+	close(fd);
+	_cgi_in.erase(fd);
+}
 
-// 	addToEpoll(pipe_in[1], EPOLLIN | EPOLLOUT);
-// 	addToEpoll(pipe_out[0], EPOLLIN | EPOLLOUT);
+void Cluster::readCgiOutput(int fd) {
+	Request *request = _cgi_out[fd];
+	char buffer[1024];
+	std::string res;
+	size_t bytes_read;
+	do {
+		bytes_read = read(fd, buffer, 1024);
+		if (bytes_read < 0)
+			throw std::runtime_error("read failed when reading cgi output");
+		res.append(buffer);
+	}
+	while (bytes_read != 0);
 
-// 	int pid = fork();
-// 	if (pid < 0)
-// 		throw std::runtime_error("Fork failed when executing CGI: " + file);
-// 	else if (!pid) {
-// 		close(pipe_in[1]);
-// 		close(pipe_out[0]);
-// 		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
-// 			throw std::runtime_error("Dup2 failed when executing CGI: " + file);
-// 		execve(file.c_str(), nullptr, nullptr);
-// 	}
-// 	else {
-// 		write()
-// 	}
-// }
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
+		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
+	close(fd);
+	_cgi_out.erase(fd);
+
+	//request->setResponseStr(res);
+}
+
+
+void Cluster::executeCgi(Request &request) {
+	int pipe_in[2];
+	int pipe_out[2];
+	std::string cgi_file =  request.getTargetFile();
+
+	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
+		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
+
+	addToEpoll(pipe_in[1], EPOLLIN | EPOLLOUT);
+	addToEpoll(pipe_out[0], EPOLLIN | EPOLLOUT);
+
+	_cgi_in[pipe_in[1]] = &request;
+	_cgi_out[pipe_out[0]] = &request;
+
+	int pid = fork();
+	if (pid < 0)
+		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
+
+	else if (!pid) {
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
+			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_file);
+
+		execve(cgi_file.c_str(), nullptr, nullptr);
+	}
+	else {
+		close(pipe_in[0]);
+		close(pipe_out[1]);
+	}
+}
