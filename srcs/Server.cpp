@@ -12,7 +12,7 @@ Server::~Server()
 {}
 
 void	Server::createSocket() {
-	struct addrinfo hints, *res;
+	struct addrinfo	hints, *res;
 
 	std::memset(&hints, 0, sizeof(hints));
 
@@ -24,10 +24,9 @@ void	Server::createSocket() {
 	else
 		hints.ai_flags = 0;
 
-	int status;
-	if ((status = getaddrinfo(_ip.c_str(), _port.c_str(), &hints, &res)) != 0) {
+	int	status;
+	if ((status = getaddrinfo(_ip.c_str(), _port.c_str(), &hints, &res)) != 0)
 		throw std::runtime_error(std::string("getaddrinfo failed: ") + gai_strerror(status));
-	}
 
 	_socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (_socket_fd < 0) {
@@ -35,7 +34,7 @@ void	Server::createSocket() {
 		throw std::runtime_error("Server socket creation failed");
 	}
 
-	int optval = 1;
+	int	optval = 1;
 	if (setsockopt(_socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
 		freeaddrinfo(res);
 		throw std::runtime_error("setsockopt failed");
@@ -45,19 +44,19 @@ void	Server::createSocket() {
 		freeaddrinfo(res);
 		throw std::runtime_error("Server socket binding failed");
 	}
+
 	_socket_addr = *res->ai_addr;
 	freeaddrinfo(res);
 	setNonBlocking(_socket_fd);
 }
 
 void	Server::setNonBlocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1) {
+	int	flags = fcntl(fd, F_GETFL, 0);
+
+	if (flags == -1)
 		throw std::runtime_error("Getting flags with fcntl failed");
-	}
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 		throw std::runtime_error("Setting flags with fcntl failed");
-	}
 }
 
 void	Server::listenSocket() {
@@ -66,8 +65,9 @@ void	Server::listenSocket() {
 }
 
 int	Server::acceptConnection() {
-	socklen_t addr_len = sizeof(_socket_addr);
-	int connection_fd = accept(_socket_fd, &_socket_addr, &addr_len);
+	socklen_t	addr_len = sizeof(_socket_addr);
+	int			connection_fd = accept(_socket_fd, &_socket_addr, &addr_len);
+
 	if (connection_fd < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return -1;
@@ -77,10 +77,8 @@ int	Server::acceptConnection() {
 }
 
 int Server::init() {
-
 	createSocket();
 	listenSocket();
-
 	return _socket_fd;
 }
 

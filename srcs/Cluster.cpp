@@ -14,7 +14,6 @@ Cluster::Cluster(t_cluster_config config)
 	std::cout << std::endl << COL_BLUE << "==============================" << std::endl;
 	std::cout << "    🌐 Webserv Cluster 🌐    " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-
 	std::cout << " 🔵 [INFO] Initializing server" << std::endl;
 
 	_epoll_fd = epoll_create1(0);
@@ -30,13 +29,11 @@ Cluster::~Cluster()
 {}
 
 void Cluster::displayServerInfo() {
-
 	std::cout << " 🔵 [INFO] Cluster Info" << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++) {
 		_servers[i].displayServerInfo();
 	}
 	std::cout << std::endl;
-
 }
 
 bool Cluster::isServerFd(int fd) {
@@ -60,7 +57,7 @@ bool Cluster::isCgiOut(int fd) {
 }
 
 void	Cluster::addToEpoll(int fd, __uint32_t events) {
-	struct epoll_event event;
+	struct epoll_event	event;
 	event.events = events;
 	event.data.fd = fd;
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
@@ -68,34 +65,36 @@ void	Cluster::addToEpoll(int fd, __uint32_t events) {
 }
 
 void	Cluster::setNonBlocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1) {
+	int	flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
 		throw std::runtime_error("Getting flags with fcntl failed");
-	}
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 		throw std::runtime_error("Setting flags with fcntl failed");
-	}
 }
 
 void Cluster::handleClient(int fd) {
-	int client_fd = 0;
+	int	client_fd = 0;
+
 	for (size_t i = 0; i < _servers.size(); i++) {
 		if (_servers[i].getFd() == fd) {
 			client_fd = _servers[i].acceptConnection();
 			if (client_fd < 0)
 				break ;
+
 			setNonBlocking(client_fd);
+
 			if (_client_to_server.find(client_fd) != _client_to_server.end())
 				break ;
 
 			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
-
 			_client_to_server[client_fd] = &_servers[i];
+
 			std::cout << COL_BLUE << "==============================" << std::endl;
 			std::cout << "   📡 New Client Connection   " << std::endl;
 			std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 			std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _client_to_server[client_fd]->getName() << COL_RESET << std::endl;
 			std::cout << std::endl;
+
 			break ;
 		}
 	}
@@ -136,13 +135,16 @@ void Cluster::handleResponse(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Request *request = new Request(fd, *_client_to_server[fd], *this);
+	Request	*request = new Request(fd, *_client_to_server[fd], *this);
+
 	request->handleRequest();
+
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << _client_to_server[fd]->getName() << COL_RESET << std::endl;
 	std::cout << std::endl;
+
 	_client_responses[fd] = request;
 
 }
@@ -150,9 +152,9 @@ void Cluster::handleRequest(int fd) {
 void Cluster::disconnectClient(int fd, bool error) {
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing client");
-
 	close(fd);
 	_client_to_server.erase(fd);
+
 	std::cout << COL_MAGENTA << "==============================" << std::endl;
 	std::cout << "    🔌 Client Disconnected    " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
@@ -163,7 +165,7 @@ void Cluster::disconnectClient(int fd, bool error) {
 }
 
 void Cluster::start() {
-	struct epoll_event events[20];
+	struct epoll_event	events[20];
 
 	for (size_t i = 0; i < _servers.size(); i++) {
 		_servers[i].init();
@@ -189,19 +191,16 @@ void Cluster::start() {
 				handleClient(fd);
 			else if (isCgiIn(fd)) {
 				writeCgiInput(fd);
-			}
-			else if (isCgiOut(fd)) {
+			} else if (isCgiOut(fd)) {
 				readCgiOutput(fd);
-			}
-			else {
+			} else {
 				if (events[i].events & EPOLLERR)
 					disconnectClient(fd, true);
 				else if (events[i].events & EPOLLRDHUP)
 					disconnectClient(fd, false);
 				else {
-					if (events[i].events & EPOLLIN) {
+					if (events[i].events & EPOLLIN)
 						handleRequest(fd);
-					}
 					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end())
 						handleResponse(fd);
 				}
@@ -213,7 +212,6 @@ void Cluster::start() {
 }
 
 void Cluster::closeCluster() {
-
 	std::cout << std::endl;
 	std::cout << COL_BLUE << "==============================" << std::endl;
 	std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
@@ -235,7 +233,8 @@ void Cluster::closeCluster() {
 }
 
 void Cluster::writeCgiInput(int fd) {
-	Request *request = _cgi_in[fd];
+	Request	*request = _cgi_in[fd];
+
 	write(fd, request->getBody().c_str(), request->getBody().size());
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
@@ -244,18 +243,17 @@ void Cluster::writeCgiInput(int fd) {
 }
 
 void Cluster::readCgiOutput(int fd) {
-	Request *request = _cgi_out[fd];
-	char buffer[1024];
-	std::string res;
-	size_t bytes_read;
+	Request		*request = _cgi_out[fd];
+	char		buffer[1024];
+	std::string	res;
+	size_t		bytes_read;
+
 	do {
 		bytes_read = read(fd, buffer, 1024);
 		if (bytes_read < 0)
 			throw std::runtime_error("read failed when reading cgi output");
 		res.append(buffer);
-	}
-	while (bytes_read != 0);
-
+	} while (bytes_read != 0);
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
 	close(fd);
@@ -266,8 +264,8 @@ void Cluster::readCgiOutput(int fd) {
 }
 
 void Cluster::executeCgi(Request &request) {
-	int pipe_in[2];
-	int pipe_out[2];
+	int	pipe_in[2];
+	int	pipe_out[2];
 	std::string cgi_file =  request.getTargetFile();
 
 	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
@@ -279,10 +277,9 @@ void Cluster::executeCgi(Request &request) {
 	_cgi_in[pipe_in[1]] = &request;
 	_cgi_out[pipe_out[0]] = &request;
 
-	int pid = fork();
+	int	pid = fork();
 	if (pid < 0)
 		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
-
 	else if (!pid) {
 		close(pipe_in[1]);
 		close(pipe_out[0]);
@@ -292,8 +289,7 @@ void Cluster::executeCgi(Request &request) {
 		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
 		char* env[] = {NULL};
 		execve(cgi_file.c_str(), args, env);
-	}
-	else {
+	} else {
 		close(pipe_in[0]);
 		close(pipe_out[1]);
 	}

@@ -6,8 +6,7 @@ int main(int argc, char **argv) {
 	if (argc > 2) {
 		std::cerr << "Error: Wrong numbers of arguments" << std::endl;
 		return 1;
-	}
-	else if (argc == 1)
+	} else if (argc == 1)
 		conf_path = "./webserv.conf";
 	else
 		conf_path = argv[1];
@@ -16,8 +15,7 @@ int main(int argc, char **argv) {
 	try {
 		config = parseConfigFile(conf_path);
 		// printClusterConfig(config);
-	}
-	catch (std::exception &e) {
+	} catch (std::exception &e) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
 		return 1;
 	}
@@ -29,8 +27,7 @@ int main(int argc, char **argv) {
 
 	try {
 		cluster.start();
-	}
-	catch (std::exception &e) {
+	} catch (std::exception &e) {
 		std::cerr << COL_RED << std::string("Error: ") + e.what() << COL_RESET << std::endl;
 		cluster.closeCluster();
 	}

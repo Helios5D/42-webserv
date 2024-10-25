@@ -2,9 +2,10 @@
 
 void fillEmptyFields(t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
-		t_server_config& server = *it;
+		t_server_config&	server = *it;
 		if (server.port.empty())
 			throw std::invalid_argument("Server listen field must be set");
+
 		if (server.server_name.empty())
 			server.server_name = "webserv.com";
 		if (server.client_max_body_size == -1)
@@ -25,8 +26,7 @@ void fillEmptyFields(t_cluster_config &cluster) {
 			location.cgi_extension = ".py";
 			location.upload_save = "/uploads/";
 			location.autoindex = "off";
-		}
-		else {
+		} else {
 			for (std::vector<t_location>::iterator ite = server.locations.begin(); ite != server.locations.end(); ++ite) {
 				t_location &location = *ite;
 				if (location.path.empty())
@@ -54,7 +54,8 @@ void fillEmptyFields(t_cluster_config &cluster) {
 
 void printClusterConfig(const t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
-		const t_server_config& server = *it;
+		const t_server_config&	server = *it;
+
 		std::cout << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
 		std::cout << "  Port: " << server.port << "\n";
 		std::cout << "  Ip: " << server.ip << "\n";
@@ -92,67 +93,77 @@ void printClusterConfig(const t_cluster_config &cluster) {
 }
 
 t_location parseLocationBlock(std::stringstream &ss) {
-	t_location location;
-	std::string line;
+	t_location	location;
+	std::string	line;
+
 	while (std::getline(ss, line)) {
 		trim(line);
 		if (line.empty())
 			continue;
+
 		else if (line == "}")
 			return location;
+
 		else if (line[line.size() - 1] != ';')
 			throw std::invalid_argument("Parsing error at: " + line);
 
 		else if (line.find("root ") == 0) {
 			if (!location.root.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(5, line.size() - 6);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			location.root = line;
-		}
-		else if (line.find("index ") == 0) {
+		} else if (line.find("index ") == 0) {
 			if (!location.index.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(6, line.size() - 7);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			location.index = line;
-		}
-		else if (line.find("cgi_extension ") == 0) {
+		} else if (line.find("cgi_extension ") == 0) {
 			if (!location.cgi_extension.empty())
+
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(14, line.size() - 15);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
 			if (line != ".py" && line != ".php")
 				throw std::invalid_argument("Parsing error: Invalid CGI extension: " + line);
+
 			location.cgi_extension = line;
-		}
-		else if (line.find("upload_save ") == 0) {
+		} else if (line.find("upload_save ") == 0) {
 			if (!location.upload_save.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(12, line.size() - 13);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			location.cgi_extension = line;
-		}
-		else if (line.find("autoindex ") == 0) {
+		} else if (line.find("autoindex ") == 0) {
 			if (!location.autoindex.empty())
+
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
 			line = line.substr(10, line.size() - 11);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
 			if (line != "on" && line != "off")
 				throw std::invalid_argument("Parsing error: Invalid value for autoindex: " + line);
+
 			location.autoindex = line;
-		}
-		else if (line.find("allowed_methods ") == 0) {
+		} else if (line.find("allowed_methods ") == 0) {
 			if (!location.allowed_methods.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(16, line.size() - 17);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			std::istringstream iss(line);
 			std::string method;
 			while (std::getline(iss, method, ' ')) {
@@ -160,8 +171,7 @@ t_location parseLocationBlock(std::stringstream &ss) {
 					throw std::invalid_argument("Parsing error: Invalid method: " + method);
 				location.allowed_methods.push_back(method);
 			}
-		}
-		else
+		} else
 			throw std::invalid_argument("Parsing error at: " + line);
 	}
 	throw std::invalid_argument("Parsing error at: " + line);
@@ -169,13 +179,15 @@ t_location parseLocationBlock(std::stringstream &ss) {
 }
 
 t_server_config parseServerBlock(std::stringstream &ss) {
-	t_server_config server_config;
+	t_server_config	server_config;
 	server_config.client_max_body_size = -1;
+
 	std::string line;
 	while (std::getline(ss, line)) {
 		trim(line);
 		if (line.empty())
 			continue;
+
 		if (line.find("location ") == 0) {
 			line = line.substr(9);
 			trim(line);
@@ -189,59 +201,66 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			t_location location = parseLocationBlock(ss);
 			location.path = path;
 			server_config.locations.push_back(location);
-		}
-		else if (line == "}")
+
+		} else if (line == "}")
 			return server_config;
+
 		else if (line[line.size() - 1] != ';')
 			throw std::invalid_argument("Parsing error at: " + line);
 
 		else if (line.find("listen ") == 0) {
 			if (!server_config.port.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(7, line.size() - 8);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			size_t colon = line.find(':');
 			if (colon != std::string::npos) {
 				server_config.ip = line.substr(0, colon);
 				server_config.port = line.substr(colon + 1);
 				if (!isNumber(server_config.port))
 					throw std::invalid_argument("Parsing error: Invalid port: " + server_config.port);
-			}
-			else {
+			} else {
 				server_config.ip = "0.0.0.0";
 				server_config.port = line;
 			}
-		}
-		else if (line.find("server_name ") == 0) {
+		} else if (line.find("server_name ") == 0) {
 			if (!server_config.server_name.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(12, line.size() - 13);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			server_config.server_name = line;
-		}
-		else if (line.find("client_max_body_size ") == 0) {
+		} else if (line.find("client_max_body_size ") == 0) {
 			if (server_config.client_max_body_size != -1)
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
+
 			line = line.substr(21, line.size() - 22);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			if (!isNumber(line))
 				throw std::invalid_argument("Parsing error: Invalid client max body size value at: " + line);
+
 			server_config.client_max_body_size = std::atol(line.c_str());
-		}
-		else if (line.find("error_page ") == 0) {
+		} else if (line.find("error_page ") == 0) {
 			line = line.substr(11, line.size() - 12);
 			if (line.empty())
 				throw std::invalid_argument("Parsing error: Empty value");
+
 			if (!isNumber(line.substr(0, 3)))
 				throw std::invalid_argument("Parsing error at: " + line);
+
 			server_config.error_pages[std::atoi(line.substr(0, 3).c_str())] = line.substr(4, line.size() - 4);
-		}
-		else
+
+		} else
 			throw std::invalid_argument("Parsing error at: " + line);
 	}
+
 	throw std::invalid_argument("Parsing error at: " + line);
 	return server_config;
 }
@@ -261,6 +280,7 @@ t_cluster_config parseConfigFile(std::string path) {
 		trim(line);
 		if (line.empty())
 			continue;
+
 		if (line.find("server ") == 0) {
 			line = line.substr(6);
 			trim(line);
