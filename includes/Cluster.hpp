@@ -23,7 +23,7 @@ class Cluster {
 		bool	isCgiOut(int fd);
 
 		void	start();
-		void	closeCluster();
+		void	closeCluster(bool print);
 
 		void	addToEpoll(int fd, __uint32_t events);
 		void	setNonBlocking(int fd);
@@ -37,4 +37,9 @@ class Cluster {
 		void	executeCgi(Request &request);
 		void	writeCgiInput(int fd);
 		void	readCgiOutput(int fd);
+
+		class execveFailException: public std::exception {
+			public:
+				const char* what() const throw();
+		};
 };

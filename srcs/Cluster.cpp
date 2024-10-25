@@ -189,11 +189,11 @@ void Cluster::start() {
 			int fd = events[i].data.fd;
 			if (isServerFd(fd) && (events[i].events & EPOLLIN))
 				handleClient(fd);
-			else if (isCgiIn(fd)) {
+			else if (isCgiIn(fd) && events[i].events & EPOLLOUT)
 				writeCgiInput(fd);
-			} else if (isCgiOut(fd)) {
+			else if (isCgiOut(fd) && events[i].events & EPOLLIN)
 				readCgiOutput(fd);
-			} else {
+			else {
 				if (events[i].events & EPOLLERR)
 					disconnectClient(fd, true);
 				else if (events[i].events & EPOLLRDHUP)
@@ -208,14 +208,16 @@ void Cluster::start() {
 		}
 	}
 
-	closeCluster();
+	closeCluster(true);
 }
 
-void Cluster::closeCluster() {
-	std::cout << std::endl;
-	std::cout << COL_BLUE << "==============================" << std::endl;
-	std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+void Cluster::closeCluster(bool print) {
+	if (print) {
+		std::cout << std::endl;
+		std::cout << COL_BLUE << "==============================" << std::endl;
+		std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
+		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+	}
 
 	for (std::map<int, Server*>::iterator it = _client_to_server.begin(); it != _client_to_server.end(); it++)
 		close(it->first);
@@ -228,8 +230,10 @@ void Cluster::closeCluster() {
 
 	close(_epoll_fd);
 
-	std::cout << " 🔵 [INFO] Server shut down succesfully. All connections closed." << std::endl;
-	std::cout << std::endl;
+	if (print) {
+		std::cout << " 🔵 [INFO] Server shut down succesfully. All connections closed." << std::endl;
+		std::cout << std::endl;
+	}
 }
 
 void Cluster::writeCgiInput(int fd) {
@@ -259,14 +263,13 @@ void Cluster::readCgiOutput(int fd) {
 	close(fd);
 	_cgi_out.erase(fd);
 
-	(void)request;
 	request->setResponseStr(res);
 }
 
 void Cluster::executeCgi(Request &request) {
-	int	pipe_in[2];
-	int	pipe_out[2];
-	std::string cgi_file =  request.getTargetFile();
+	int			pipe_in[2];
+	int			pipe_out[2];
+	std::string	cgi_file = request.getTargetFile();
 
 	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
 		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
@@ -281,16 +284,24 @@ void Cluster::executeCgi(Request &request) {
 	if (pid < 0)
 		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
 	else if (!pid) {
-		close(pipe_in[1]);
-		close(pipe_out[0]);
 		if (dup2(pipe_in[0], STDIN_FILENO) < 0 || dup2(pipe_out[1], STDOUT_FILENO) < 0)
 			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_file);
+
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		close(pipe_in[0]);
+		close(pipe_out[1]);
 
 		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
 		char* env[] = {NULL};
 		execve(cgi_file.c_str(), args, env);
+		throw execveFailException();
 	} else {
 		close(pipe_in[0]);
 		close(pipe_out[1]);
 	}
+}
+
+const char* Cluster::execveFailException::what() const throw() {
+	return "execve failed";
 }
