@@ -25,5 +25,16 @@ typedef struct s_cluster_config {
 	std::vector<t_server_config>	servers;
 } t_cluster_config;
 
-t_cluster_config	parseConfigFile(std::string path);
-void				printClusterConfig(const t_cluster_config& cluster);
+class Config {
+	private:
+		Config();
+		~Config();
+	public:
+		static t_cluster_config	parseConfigFile(std::string path);
+		static void				printClusterConfig(const t_cluster_config& cluster);
+		static t_server_config	parseServerBlock(std::stringstream &ss);
+		static t_location		parseLocationBlock(std::stringstream &ss);
+		static void				fillEmptyFields(t_cluster_config &cluster);
+};
+
+std::ostream &operator<<(std::ostream &os, const t_cluster_config &cluster);

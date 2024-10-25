@@ -1,6 +1,9 @@
-#include "webserv.hpp"
+#include "Config.hpp"
 
-void fillEmptyFields(t_cluster_config &cluster) {
+Config::Config() {}
+Config::~Config() {}
+
+void Config::fillEmptyFields(t_cluster_config &cluster) {
 	for (std::vector<t_server_config>::iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
 		t_server_config&	server = *it;
 		if (server.port.empty())
@@ -52,47 +55,7 @@ void fillEmptyFields(t_cluster_config &cluster) {
 	}
 }
 
-void printClusterConfig(const t_cluster_config &cluster) {
-	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
-		const t_server_config&	server = *it;
-
-		std::cout << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
-		std::cout << "  Port: " << server.port << "\n";
-		std::cout << "  Ip: " << server.ip << "\n";
-		std::cout << "  Server Name: " << server.server_name << "\n";
-		std::cout << "  Client Max Body Size: " << server.client_max_body_size << "\n";
-
-		// Print error pages
-		std::cout << "  Error Pages:\n";
-		for (std::map<int, std::string>::const_iterator err_it = server.error_pages.begin(); err_it != server.error_pages.end(); ++err_it) {
-			std::cout << "    Error Code " << err_it->first << ": " << err_it->second << "\n";
-		}
-
-		// Print locations
-		std::cout << "  Locations:\n";
-		for (std::vector<t_location>::const_iterator loc_it = server.locations.begin(); loc_it != server.locations.end(); ++loc_it) {
-			const t_location& location = *loc_it;
-			std::cout << "    Location " << (loc_it - server.locations.begin() + 1) << ":\n";
-			std::cout << "      Path: " << location.path << "\n";
-			std::cout << "      Root: " << location.root << "\n";
-			std::cout << "      Index: " << location.index << "\n";
-			std::cout << "      CGI Extension: " << location.cgi_extension << "\n";
-			std::cout << "      Upload Save: " << location.upload_save << "\n";
-
-			// Print allowed methods
-			std::cout << "      Allowed Methods: ";
-			for (std::vector<std::string>::const_iterator method_it = location.allowed_methods.begin(); method_it != location.allowed_methods.end(); ++method_it) {
-				std::cout << *method_it;
-				if (method_it + 1 != location.allowed_methods.end()) {
-					std::cout << ", ";
-				}
-			}
-			std::cout << "\n";
-		}
-	}
-}
-
-t_location parseLocationBlock(std::stringstream &ss) {
+t_location Config::parseLocationBlock(std::stringstream &ss) {
 	t_location	location;
 	std::string	line;
 
@@ -103,10 +66,8 @@ t_location parseLocationBlock(std::stringstream &ss) {
 
 		else if (line == "}")
 			return location;
-
 		else if (line[line.size() - 1] != ';')
 			throw std::invalid_argument("Parsing error at: " + line);
-
 		else if (line.find("root ") == 0) {
 			if (!location.root.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
@@ -178,7 +139,7 @@ t_location parseLocationBlock(std::stringstream &ss) {
 	return location;
 }
 
-t_server_config parseServerBlock(std::stringstream &ss) {
+t_server_config Config::parseServerBlock(std::stringstream &ss) {
 	t_server_config	server_config;
 	server_config.client_max_body_size = -1;
 
@@ -191,6 +152,7 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 		if (line.find("location ") == 0) {
 			line = line.substr(9);
 			trim(line);
+
 			std::istringstream iss(line);
 			std::string path;
 			std::getline(iss, path, ' ');
@@ -198,16 +160,14 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 			std::getline(iss, a, ' ');
 			if (a != "{")
 				throw std::invalid_argument("Parsing error at: " + line);
+
 			t_location location = parseLocationBlock(ss);
 			location.path = path;
 			server_config.locations.push_back(location);
-
 		} else if (line == "}")
 			return server_config;
-
 		else if (line[line.size() - 1] != ';')
 			throw std::invalid_argument("Parsing error at: " + line);
-
 		else if (line.find("listen ") == 0) {
 			if (!server_config.port.empty())
 				throw std::invalid_argument("Parsing error: Duplicate at: " + line);
@@ -265,7 +225,7 @@ t_server_config parseServerBlock(std::stringstream &ss) {
 	return server_config;
 }
 
-t_cluster_config parseConfigFile(std::string path) {
+t_cluster_config Config::parseConfigFile(std::string path) {
 	std::ifstream conf_file(path.c_str());
 	std::stringstream ss;
 	t_cluster_config cluster_config;
@@ -299,3 +259,45 @@ t_cluster_config parseConfigFile(std::string path) {
 	}
 	return cluster_config;
 }
+
+#include <iostream>
+
+std::ostream &operator<<(std::ostream &os, const t_cluster_config &cluster) {
+	for (std::vector<t_server_config>::const_iterator it = cluster.servers.begin(); it != cluster.servers.end(); ++it) {
+		const t_server_config &server = *it;
+
+		os << "Server " << (it - cluster.servers.begin() + 1) << ":\n";
+		os << "  Port: " << server.port << std::endl;
+		os << "  IP: " << server.ip << std::endl;
+		os << "  Server Name: " << server.server_name << std::endl;
+		os << "  Client Max Body Size: " << server.client_max_body_size << std::endl;
+
+		os << "  Error Pages" << std::endl;
+		for (std::map<int, std::string>::const_iterator err_it = server.error_pages.begin(); err_it != server.error_pages.end(); ++err_it) {
+			os << "    Error Code " << err_it->first << ": " << err_it->second << std::endl;
+		}
+
+		os << "  Locations" << std::endl;
+		for (std::vector<t_location>::const_iterator loc_it = server.locations.begin(); loc_it != server.locations.end(); ++loc_it) {
+			const t_location &location = *loc_it;
+			os << "    Location " << (loc_it - server.locations.begin() + 1) << std::endl;
+			os << "      Path: " << location.path << std::endl;
+			os << "      Root: " << location.root << std::endl;
+			os << "      Index: " << location.index << std::endl;
+			os << "      CGI Extension: " << location.cgi_extension << std::endl;
+			os << "      Upload Save: " << location.upload_save << std::endl;
+
+			os << "      Allowed Methods: ";
+			for (std::vector<std::string>::const_iterator method_it = location.allowed_methods.begin(); method_it != location.allowed_methods.end(); ++method_it) {
+				os << *method_it;
+				if (method_it + 1 != location.allowed_methods.end()) {
+					os << ", ";
+				}
+			}
+			os << std::endl;
+		}
+		os << std::endl;
+	}
+	return os;
+}
+

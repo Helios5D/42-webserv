@@ -25,7 +25,7 @@
 #include <ctime>
 
 #include "colors.hpp"
-#include "config.hpp"
+#include "Config.hpp"
 
 // Prototypes //
 

@@ -239,7 +239,9 @@ void Cluster::closeCluster(bool print) {
 void Cluster::writeCgiInput(int fd) {
 	Request	*request = _cgi_in[fd];
 
-	write(fd, request->getBody().c_str(), request->getBody().size());
+	size_t bytes_written = write(fd, request->getBody().c_str(), request->getBody().size());
+	if (bytes_written < 0)
+		throw std::runtime_error("write failed when writing cgi input");
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
 	close(fd);
@@ -274,8 +276,8 @@ void Cluster::executeCgi(Request &request) {
 	if (pipe(pipe_in) < 0 || pipe(pipe_out) < 0)
 		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
 
-	addToEpoll(pipe_in[1], EPOLLIN | EPOLLOUT);
-	addToEpoll(pipe_out[0], EPOLLIN | EPOLLOUT);
+	addToEpoll(pipe_in[1], EPOLLOUT);
+	addToEpoll(pipe_out[0], EPOLLIN);
 
 	_cgi_in[pipe_in[1]] = &request;
 	_cgi_out[pipe_out[0]] = &request;

@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
 	t_cluster_config config;
 	try {
-		config = parseConfigFile(conf_path);
-		// printClusterConfig(config);
+		config = Config::parseConfigFile(conf_path);
+		// std::cout << config;
 	} catch (std::exception &e) {
 		std::cerr << COL_RED << e.what() << COL_RESET << std::endl;
 		return 1;
