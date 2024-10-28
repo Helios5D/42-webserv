@@ -60,7 +60,7 @@ void Config::fillEmptyFields(t_cluster_config &cluster) {
 				if (location.upload_save.empty())
 					location.upload_save = "/uploads/";
 				if (location.autoindex.empty())
-					location.autoindex = "off";
+					location.autoindex = "on";
 
 			}
 		}

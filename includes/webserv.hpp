@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
+#include <dirent.h>
 
 #include <iostream>
 #include <vector>
@@ -37,6 +38,7 @@ void	toLower(std::string &str);
 void	nbToStr(std::string &str, size_t nb);
 void	getFileExtension(const std::string &filePath, std::string &extension);
 void	generateFileName(std::string &fileName);
+bool	isDirectory(const std::string &path);
 void	initializeCodesResponses();
 void	initializeContentTypes();
 

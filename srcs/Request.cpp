@@ -76,14 +76,6 @@ Request::Request(const int &fd, const Server &server, Cluster &cluster)
 
 Request::~Request() {}
 
-bool isDirectory(const std::string &path) {
-	struct stat pathStat;
-
-	if (stat(path.c_str(), &pathStat) != 0)
-		return 0;
-	return S_ISDIR(pathStat.st_mode);
-}
-
 bool Request::_checkTarget() {
 	std::string	route = _targetRoute;
 	bool		isSlash = false;
@@ -127,7 +119,8 @@ bool Request::_checkTarget() {
 			_targetFile = '.' + (*it).root + '/' + _targetRoute;
 
 			if (_targetFile[_targetFile.length() - 1] == '/' || isDirectory(_targetFile))
-				_targetFile += '/' + (*it).index;
+				if (_location->autoindex == "on")
+					_targetFile += '/' + (*it).index;
 
 			if (access(_targetFile.c_str(), F_OK) != 0) {
 				_response.setMessage("The resource you're looking for does not exist.");

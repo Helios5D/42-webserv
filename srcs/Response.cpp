@@ -28,9 +28,7 @@ void Response::createResponse() {
 	_responseStr = ss.str();
 }
 
-void Response::_replaceBodyMessage() {
-	std::string from = "<p>MESSAGE</p>";
-	std::string to = "<p>" + _message + "</p>";
+void Response::_replaceBodyPart(const std::string &from, const std::string &to) {
 	std::string::size_type pos = 0;
 
 	while ((pos = _body.find(from, pos)) != std::string::npos) {
@@ -55,32 +53,72 @@ void Response::_findContentType() {
 		_headers["content-type"] = "text/plain";
 }
 
+std::string listDirectory(const std::string &path) {
+	std::string	directoryListing;
+	DIR			*dir;
+
+	if ((dir = opendir(path.c_str())) != NULL) {
+		for (struct dirent *entry = readdir(dir); entry != NULL; entry = readdir(dir)) {
+			std::string entryName = entry->d_name;
+
+			if (entryName == "." || entryName == "..")
+				continue ;
+			directoryListing += "<li>";
+			entry->d_type == DT_DIR ? directoryListing += "D - " : directoryListing += "F - ";
+			directoryListing += "<a href=\"" + path + '/' + entryName + "\">" + entryName + "</a></li>\n";
+		}
+
+		closedir(dir);
+	} else
+		throw std::runtime_error("directory could not be opened");
+
+	return directoryListing;
+}
+
 void Response::_createBody() {
 	if (_code == 200) {
 		if (_method == "POST") {
 			_message = "POST request was successfully processed.";
-			_body = "POST request was successfully processed.";
+			_body = _message;
 			_headers["content-type"] = "text/plain";
 		} else if (_method == "DELETE") {
 			_message = "File was successfully deleted.";
-			_body = "File was successfully deleted.";
+			_body = _message;
 			_headers["content-type"] = "text/plain";
 		} else {
-			std::ifstream file(_filePath.c_str());
+			if (isDirectory(_filePath)) {
+				std::ifstream file("./web/pages/directory_listing.html");
 
-			if (file.is_open()) {
-				std::stringstream buf;
+				if (file.is_open()) {
+					std::stringstream buf;
 
-				buf << file.rdbuf();
-				_body = buf.str();
+					buf << file.rdbuf();
+					_body = buf.str();
+					_replaceBodyPart("[DIRECTORY LISTING]", listDirectory(_filePath));
 
-				_findContentType();
-				_message = "Requested file was successfully returned.";
-				file.close();
+					_headers["content-type"] = "text/html";
+					file.close();
+				} else {
+					_body = _message;
+					_headers["content-type"] = "text/plain";
+				}
 			} else {
-				_code = 404;
-				_message = "The resource you're looking for does not exist.";
-				_createBody();
+				std::ifstream file(_filePath.c_str());
+
+				if (file.is_open()) {
+					std::stringstream buf;
+
+					buf << file.rdbuf();
+					_body = buf.str();
+
+					_findContentType();
+					_message = "Requested file was successfully returned.";
+					file.close();
+				} else {
+					_code = 404;
+					_message = "The resource you're looking for does not exist.";
+					_createBody();
+				}
 			}
 		}
 	} else {
@@ -95,7 +133,7 @@ void Response::_createBody() {
 
 				buf << errorPageFile.rdbuf();
 				_body = buf.str();
-				_replaceBodyMessage();
+				_replaceBodyPart("[MESSAGE]", _message);
 
 				_headers["content-type"] = "text/html";
 				errorPageFile.close();

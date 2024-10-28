@@ -52,6 +52,14 @@ void generateFileName(std::string &fileName) {
 	fileName = ss.str();
 }
 
+bool isDirectory(const std::string &path) {
+	struct stat pathStat;
+
+	if (stat(path.c_str(), &pathStat) != 0)
+		return 0;
+	return S_ISDIR(pathStat.st_mode);
+}
+
 void initializeCodesResponses() {
 	g_codes_responses[100] = "Continue";
 	g_codes_responses[101] = "Switching Protocols";

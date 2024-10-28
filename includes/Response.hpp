@@ -33,5 +33,5 @@ class Response {
 
 		void	_createBody();
 		void	_findContentType();
-		void	_replaceBodyMessage();
+		void	_replaceBodyPart(const std::string &from, const std::string &to);
 };
