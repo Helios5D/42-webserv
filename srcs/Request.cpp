@@ -120,7 +120,7 @@ bool Request::_checkTarget() {
 			if (_location->redir_code != -1) {
 				_response.setCode(_location->redir_code);
 				if (!_location->redir_path.empty())
-					_response.addHeader("location", _location->path);
+					_response.addHeader("location", _location->redir_path);
 				return false;
 			}
 
