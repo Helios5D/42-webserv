@@ -6,6 +6,7 @@ INCLUDES_DIR = includes
 SRCS_DIR = srcs
 
 SRCS =	$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
+		$(addprefix $(SRCS_DIR)/, Client.cpp) \
 		$(addprefix $(SRCS_DIR)/, Config.cpp) \
 		$(addprefix $(SRCS_DIR)/, Server.cpp) \
 		$(addprefix $(SRCS_DIR)/, tools.cpp) \
@@ -17,7 +18,7 @@ OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
 
 OBJS_DIR = objs
 
-CFLAGS = -Wall -Wextra -Werror -std=c++98
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -g3
 
 # ANSI color codes
 GREEN = \033[1;32m

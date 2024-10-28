@@ -20,7 +20,7 @@ Cluster::Cluster(t_cluster_config config)
 	if (_epoll_fd < 0)
 		throw std::runtime_error("Epoll creation failed");
 	for (size_t i = 0; i < config.servers.size(); i++) {
-		Server server(config.servers[i]);
+		Server *server = new Server(config.servers[i]);
 		_servers.push_back(server);
 	}
 }
@@ -31,17 +31,25 @@ Cluster::~Cluster()
 void Cluster::displayServerInfo() {
 	std::cout << " 🔵 [INFO] Cluster Info" << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++) {
-		_servers[i].displayServerInfo();
+		_servers[i]->displayServerInfo();
 	}
 	std::cout << std::endl;
 }
 
 bool Cluster::isServerFd(int fd) {
 	for (size_t i = 0; i < _servers.size(); i++) {
-		if (_servers[i].getFd() == fd)
+		if (_servers[i]->getFd() == fd)
 			return true;
 	}
 	return false;
+}
+
+ssize_t Cluster::findClient(int fd) {
+	for (size_t i = 0; i < _clients.size(); i++) {
+		if (_clients[i]->getFd() == fd)
+			return i;
+	}
+	return -1;
 }
 
 bool Cluster::isCgiOut(int fd) {
@@ -70,23 +78,25 @@ void Cluster::handleClient(int fd) {
 	int	client_fd = 0;
 
 	for (size_t i = 0; i < _servers.size(); i++) {
-		if (_servers[i].getFd() == fd) {
-			client_fd = _servers[i].acceptConnection();
+		if (_servers[i]->getFd() == fd) {
+			client_fd = _servers[i]->acceptConnection();
 			if (client_fd < 0)
 				break ;
 
 			setNonBlocking(client_fd);
 
-			if (_client_to_server.find(client_fd) != _client_to_server.end())
+			if (findClient(fd) != -1)
 				break ;
 
 			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
-			_client_to_server[client_fd] = &_servers[i];
+			
+			Client *new_client = new Client(client_fd, _servers[i]);
+			_clients.push_back(new_client);
 
 			std::cout << COL_BLUE << "==============================" << std::endl;
 			std::cout << "   📡 New Client Connection   " << std::endl;
 			std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-			std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _client_to_server[client_fd]->getName() << COL_RESET << std::endl;
+			std::cout << " 🔵 [INFO] Connection established with client on server " << COL_CYAN << _servers[i]->getName() << COL_RESET << std::endl;
 			std::cout << std::endl;
 
 			break ;
@@ -95,21 +105,25 @@ void Cluster::handleClient(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Request	*request = new Request(fd, *_client_to_server[fd], *this);
+	Client	*client = _clients[findClient(fd)];
+	Request	*request = new Request(fd, *(client->getServer()), *this);
 
 	request->handleRequest();
+	
+	client->setRequest(request);
 
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << _client_to_server[fd]->getName() << COL_RESET << std::endl;
+	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << client->getServer()->getName() << COL_RESET << std::endl;
 	std::cout << std::endl;
-
-	_client_responses[fd] = request;
+	
+	client->setResponseReady(true);
 }
 
 void Cluster::handleResponse(int fd) {
-	Request			*request = _client_responses[fd];
+	Client			*client = _clients[findClient(fd)];
+	Request			*request = client->getRequest();
 	const Response	&response = request->getResponse();
 
 	std::string message = response.getResponseStr();
@@ -139,14 +153,18 @@ void Cluster::handleResponse(int fd) {
 
 	std::cout << std::endl;
 	delete request;
-	_client_responses.erase(fd);
+	client->setRequest(NULL);
+	client->setResponseReady(false);
 }
 
 void Cluster::disconnectClient(int fd, bool error) {
+	Client			*client = _clients[findClient(fd)];
+	
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing client");
-	close(fd);
-	_client_to_server.erase(fd);
+	_clients.erase(_clients.begin() + findClient(fd));
+	
+	delete client;
 
 	std::cout << COL_MAGENTA << "==============================" << std::endl;
 	std::cout << "    🔌 Client Disconnected    " << std::endl;
@@ -161,8 +179,8 @@ void Cluster::start() {
 	struct epoll_event	events[20];
 
 	for (size_t i = 0; i < _servers.size(); i++) {
-		_servers[i].init();
-		addToEpoll(_servers[i].getFd(), EPOLLIN);
+		_servers[i]->init();
+		addToEpoll(_servers[i]->getFd(), EPOLLIN);
 	}
 
 	running = true;
@@ -192,7 +210,7 @@ void Cluster::start() {
 				else {
 					if (events[i].events & EPOLLIN)
 						handleRequest(fd);
-					if ((events[i].events & EPOLLOUT) && _client_responses.find(fd) != _client_responses.end()
+					if ((events[i].events & EPOLLOUT) && _clients[findClient(fd)]->isResponsReady()
 						&& _cgi_out.empty())
 						handleResponse(fd);
 				}
@@ -211,14 +229,11 @@ void Cluster::closeCluster(bool print) {
 		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	}
 
-	for (std::map<int, Server*>::iterator it = _client_to_server.begin(); it != _client_to_server.end(); it++)
-		close(it->first);
-
-	for (std::map<int, Request*>::iterator it = _client_responses.begin(); it != _client_responses.end(); it++)
-		delete it->second;
-
 	for (size_t i = 0; i < _servers.size(); i++)
-		close(_servers[i].getFd());
+		delete _servers[i];
+		
+	for (size_t i = 0; i < _clients.size(); i++)
+		delete _clients[i];
 
 	close(_epoll_fd);
 

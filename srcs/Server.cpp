@@ -1,7 +1,8 @@
 #include "Server.hpp"
 
 Server::Server(t_server_config config)
-:	_ip(config.ip), _port(config.port),
+:	_socket_fd(-1),
+	_ip(config.ip), _port(config.port),
 	_name(config.server_name),
 	_client_max_body_size(config.client_max_body_size),
 	_error_pages(config.error_pages),
@@ -9,7 +10,10 @@ Server::Server(t_server_config config)
 {}
 
 Server::~Server()
-{}
+{
+	if (_socket_fd != -1)
+		close(_socket_fd);
+}
 
 void	Server::createSocket() {
 	struct addrinfo	hints, *res;
