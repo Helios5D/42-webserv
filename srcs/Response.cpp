@@ -28,15 +28,6 @@ void Response::createResponse() {
 	_responseStr = ss.str();
 }
 
-void Response::_replaceBodyPart(const std::string &from, const std::string &to) {
-	std::string::size_type pos = 0;
-
-	while ((pos = _body.find(from, pos)) != std::string::npos) {
-		_body.replace(pos, from.length(), to);
-		pos += to.length();
-	}
-}
-
 void Response::_findContentType() {
 	std::string extension;
 	getFileExtension(_filePath, extension);
@@ -63,9 +54,10 @@ std::string listDirectory(const std::string &path) {
 
 			if (entryName == "." || entryName == "..")
 				continue ;
+			bool isDir = entry->d_type == DT_DIR;
 			directoryListing += "<li>";
-			entry->d_type == DT_DIR ? directoryListing += "D - " : directoryListing += "F - ";
-			directoryListing += "<a href=\"" + path + '/' + entryName + "\">" + entryName + "</a></li>\n";
+			isDir ? directoryListing += "D - " : directoryListing += "F - ";
+			directoryListing += "<a href=\"" + entryName + (isDir ? "/" : "") + "\">" + entryName + "</a></li>\n";
 		}
 
 		closedir(dir);
@@ -94,7 +86,7 @@ void Response::_createBody() {
 
 					buf << file.rdbuf();
 					_body = buf.str();
-					_replaceBodyPart("[DIRECTORY LISTING]", listDirectory(_filePath));
+					replaceFirstOccurence(_body, "[DIRECTORY LISTING]", listDirectory(_filePath));
 
 					_headers["content-type"] = "text/html";
 					file.close();
@@ -133,7 +125,7 @@ void Response::_createBody() {
 
 				buf << errorPageFile.rdbuf();
 				_body = buf.str();
-				_replaceBodyPart("[MESSAGE]", _message);
+				replaceFirstOccurence(_body, "[MESSAGE]", _message);
 
 				_headers["content-type"] = "text/html";
 				errorPageFile.close();

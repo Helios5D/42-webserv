@@ -116,10 +116,13 @@ bool Request::_checkTarget() {
 				return false;
 			}
 
-			_targetFile = '.' + (*it).root + '/' + _targetRoute;
+			_targetFile = '.' + _targetRoute;
+			replaceFirstOccurence(_targetFile, route, (*it).root + '/');
 
-			if (_targetFile[_targetFile.length() - 1] == '/' || isDirectory(_targetFile))
+			if (_targetRoute[_targetRoute.length() - 1] == '/') {
 				if (_location->autoindex == "on")
+					_targetFile += '/' + (*it).index;
+			} else if (isDirectory(_targetFile))
 					_targetFile += '/' + (*it).index;
 
 			if (access(_targetFile.c_str(), F_OK) != 0) {

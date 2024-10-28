@@ -60,6 +60,15 @@ bool isDirectory(const std::string &path) {
 	return S_ISDIR(pathStat.st_mode);
 }
 
+void replaceFirstOccurence(std::string &str, const std::string &from, const std::string &to) {
+	std::string::size_type pos = 0;
+
+	if ((pos = str.find(from, pos)) != std::string::npos) {
+		str.replace(pos, from.length(), to);
+		pos += to.length();
+	}
+}
+
 void initializeCodesResponses() {
 	g_codes_responses[100] = "Continue";
 	g_codes_responses[101] = "Switching Protocols";
