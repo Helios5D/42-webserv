@@ -66,6 +66,14 @@ void	Cluster::addToEpoll(int fd, __uint32_t events) {
 		throw std::runtime_error("epoll_ctl failed when adding fd");
 }
 
+void	Cluster::modifyEvents(int fd, __uint32_t events) {
+	struct epoll_event	event;
+	event.events = events;
+	event.data.fd = fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
+		throw std::runtime_error("epoll_ctl failed when adding fd");
+}
+
 void	Cluster::setNonBlocking(int fd) {
 	int	flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1)
@@ -88,7 +96,7 @@ void Cluster::handleClient(int fd) {
 			if (findClient(fd) != -1)
 				break ;
 
-			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
+			addToEpoll(client_fd, EPOLLIN | EPOLLRDHUP);
 			
 			Client *new_client = new Client(client_fd, _servers[i]);
 			_clients.push_back(new_client);
@@ -119,42 +127,48 @@ void Cluster::handleRequest(int fd) {
 	std::cout << std::endl;
 	
 	client->setResponseReady(true);
+	
+	modifyEvents(fd, EPOLLOUT | EPOLLRDHUP);
 }
 
 void Cluster::handleResponse(int fd) {
-	Client			*client = _clients[findClient(fd)];
-	Request			*request = client->getRequest();
-	const Response	&response = request->getResponse();
+	Client *client = _clients[findClient(fd)];
+	Request *request = client->getRequest();
+	const Response &response = request->getResponse();
 
 	std::string message = response.getResponseStr();
-	size_t total_sent = 0;
 	size_t total_size = message.size();
 
-	while (total_sent < total_size) {
-		ssize_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
-		if (bytes_sent < 0)
-			throw std::runtime_error("Could not send response to client");
-		total_sent += bytes_sent;
+	ssize_t bytes_sent = send(fd, message.c_str() + client->bytes_sent, total_size - client->bytes_sent, 0);
+	if (bytes_sent > 0) {
+		client->bytes_sent += static_cast<size_t>(bytes_sent);
+	}
+	else {
+		throw std::runtime_error("Couldnt send data to client");
 	}
 
-	std::cout << COL_CYAN << "==============================" << std::endl;
-	std::cout << "      📤 Server Response      " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
-	std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
+	if (client->bytes_sent == total_size) {
+		modifyEvents(fd, EPOLLIN | EPOLLRDHUP);
 
-	std::map<std::string, std::string> headers = request->getHeaders();
-	if (headers.find("connection") != headers.end()) {
-		if (headers["connection"] == "close") {
+		std::cout << COL_CYAN << "==============================" << std::endl;
+		std::cout << "      📤 Server Response      " << std::endl;
+		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+		std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
+		std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
+
+		std::map<std::string, std::string> headers = request->getHeaders();
+		if (headers.find("connection") != headers.end() && headers["connection"] == "close") {
 			std::cout << std::endl;
 			disconnectClient(fd, 0);
 		}
-	}
 
-	std::cout << std::endl;
-	delete request;
-	client->setRequest(NULL);
-	client->setResponseReady(false);
+		std::cout << std::endl;
+		delete request;
+		client->setRequest(NULL);
+		client->setResponseReady(false);
+		client->bytes_sent = 0;
+	} else
+		modifyEvents(fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
 }
 
 void Cluster::disconnectClient(int fd, bool error) {

@@ -25,6 +25,7 @@ class Cluster {
 		void	closeCluster(bool print);
 
 		void	addToEpoll(int fd, __uint32_t events);
+		void	modifyEvents(int fd, __uint32_t events);
 		void	setNonBlocking(int fd);
 
 		void	displayServerInfo();

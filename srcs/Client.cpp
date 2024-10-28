@@ -1,7 +1,7 @@
 #include "Client.hpp"
 
 Client::Client(int fd, Server *server)
-: _fd(fd), _server(server), _request(NULL), _response_ready(false)
+: _fd(fd), _server(server), _request(NULL), _response_ready(false), bytes_sent(0)
 {}
 
 Client::~Client()

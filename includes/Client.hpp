@@ -15,8 +15,9 @@ class Client {
 		bool	_response_ready;
 		
 	public:
-		Client(int fd, Server *server);
-		~Client();
+				Client(int fd, Server *server);
+				~Client();
+		size_t	bytes_sent;
 		bool	isResponsReady();
 		void	setResponseReady(bool ready);
 		void	setRequest(Request *request);
