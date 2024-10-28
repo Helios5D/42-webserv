@@ -116,10 +116,8 @@ void Cluster::handleResponse(int fd) {
 	size_t total_sent = 0;
 	size_t total_size = message.size();
 
-	std::cout << "RESPONSE : " << message;
-
 	while (total_sent < total_size) {
-		size_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
+		ssize_t bytes_sent = send(fd, message.c_str() + total_sent, total_size - total_sent, 0);
 		if (bytes_sent < 0)
 			throw std::runtime_error("Could not send response to client");
 		total_sent += bytes_sent;
@@ -202,7 +200,7 @@ void Cluster::start() {
 		}
 	}
 
-	closeCluster(false);
+	closeCluster(true);
 }
 
 void Cluster::closeCluster(bool print) {
@@ -231,11 +229,10 @@ void Cluster::closeCluster(bool print) {
 }
 
 void Cluster::readCgiOutput(int fd) {
-	std::cout << "reading from CGI" << std::endl;
 	Request		*request = _cgi_out[fd];
 	char		buffer[1024];
 	std::string	res;
-	size_t		bytes_read;
+	ssize_t		bytes_read;
 
 	do {
 		bytes_read = read(fd, buffer, 1024);
@@ -262,8 +259,6 @@ void Cluster::executeCgi(Request &request) {
 
 	_cgi_out[pipe_out[0]] = &request;
 
-	std::cout << request.getBody() << std::endl;
-
 	int	pid = fork();
 	if (pid < 0)
 		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
@@ -275,28 +270,32 @@ void Cluster::executeCgi(Request &request) {
 		close(pipe_out[0]);
 		close(pipe_out[1]);
 
-		std::cerr << cgi_file << std::endl;
 		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
-		char *env[] = {NULL};
-		// char **env = generateEnv(request.getBody());
+		char **env = generateEnv(request.getBody());
 		execve(cgi_file.c_str(), args, env);
-		running = false;
 		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
+		running = false;
 		exit(1);
 	} else {
 		close(pipe_out[1]);
 	}
 }
 
-// char **Cluster::generateEnv(std::string body) {
-// 	std::istringstream iss(body);
+char **Cluster::generateEnv(std::string body) {
+	std::istringstream iss(body);
 
-// 	std::string var;
-// 	std::vector<char *> env;
-// 	while (getline(iss, var, '&'))
-// 	{
-// 		env.push_back(const_cast<char *>(var.c_str()));
-// 	}
-// 	char **char_env = env.data();
-// 	return char_env;
-// }
+	std::string var;
+	std::vector<std::string> args;
+	while (getline(iss, var, '&'))
+		args.push_back(var);
+	char **env = new char*[args.size() + 1];
+	
+	size_t i;
+	for (i = 0; i < args.size(); i++) {
+		env[i] = new char[args[i].size() + 1];
+		std::strcpy(env[i], args[i].c_str());
+	}
+	env[i] = NULL;
+	
+	return env;
+}

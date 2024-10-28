@@ -33,6 +33,6 @@ class Cluster {
 		void	disconnectClient(int fd, bool error);
 
 		void	executeCgi(Request &request);
-		// char	**generateEnv(std::string body);
+		char	**generateEnv(std::string body);
 		void	readCgiOutput(int fd);
 };
