@@ -5,7 +5,8 @@ INCLUDES_DIR = includes
 
 SRCS_DIR = srcs
 
-SRCS =	$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
+SRCS =	$(addprefix $(SRCS_DIR)/, Cgi.cpp) \
+		$(addprefix $(SRCS_DIR)/, Cluster.cpp) \
 		$(addprefix $(SRCS_DIR)/, Client.cpp) \
 		$(addprefix $(SRCS_DIR)/, Config.cpp) \
 		$(addprefix $(SRCS_DIR)/, Server.cpp) \

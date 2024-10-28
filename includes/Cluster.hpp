@@ -1,25 +1,27 @@
 #pragma once
 
 #include "Client.hpp"
+#include "Cgi.hpp"
 
 class Request;
 class Client;
+class Cgi;
 
 class Cluster {
 	private:
 		std::vector<Server *>		_servers;
 		std::vector<Client *>		_clients;
+		std::vector<Cgi*>			_cgis;
 		std::vector<struct pollfd>	_poll_fds;
-		std::map<int, Request*>		_cgi_out;
 		int							_epoll_fd;
 	public:
 				Cluster(t_cluster_config);
 				~Cluster();
 
 		bool	isServerFd(int fd);
-		bool	isCgiOut(int fd);
 		
 		ssize_t	findClient(int fd);
+		ssize_t	findCgi(int fd);
 
 		void	start();
 		void	closeCluster(bool print);
@@ -36,5 +38,7 @@ class Cluster {
 
 		void	executeCgi(Request &request);
 		char	**generateEnv(std::string body);
+		void	freeEnv(char **env);
 		void	readCgiOutput(int fd);
+		void	checkActiveCgi();
 };
