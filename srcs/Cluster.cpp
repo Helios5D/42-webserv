@@ -291,9 +291,8 @@ void Cluster::checkActiveCgi() {
 	for (size_t i = 0; i < _cgis.size(); i++) {
 		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
 
-		if (time - _cgis[i]->getStartTime() > 2.0) {
-			Request		*request = _cgis[i]->getClient()->getRequest();
-			Response	&response = request->getResponse();
+		if (time - _cgis[i]->getStartTime() > 1.0) {
+			Response	&response = _cgis[i]->getClient()->getRequest()->getResponse();
 
 			kill(_cgis[i]->getPid(), SIGKILL);
 			delete _cgis[i];
@@ -311,9 +310,13 @@ void Cluster::checkActiveCgi() {
 			throw std::runtime_error("waitpid failed when waiting for CGI process");
 		} else {
 			if (WIFEXITED(status)) {
+				Response	&response = _cgis[i]->getClient()->getRequest()->getResponse();
+
 				int exit_code = WEXITSTATUS(status);
 				if (exit_code != 0) {
-					throw std::runtime_error("CGI process failed");
+					response.setCode(502);
+					response.setMessage("CGI execution failed.");
+					response.createResponse();
 				}
 			}
 
