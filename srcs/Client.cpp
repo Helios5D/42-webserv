@@ -7,8 +7,7 @@ Client::Client(int fd, Server *server)
 Client::~Client()
 {
 	close(_fd);
-	if (_request)
-		delete _request;
+	delete _request;
 }
 
 void Client::setRequest(Request *request) {

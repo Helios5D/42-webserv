@@ -160,6 +160,7 @@ void Cluster::handleResponse(int fd) {
 		if (headers.find("connection") != headers.end() && headers["connection"] == "close") {
 			std::cout << std::endl;
 			disconnectClient(fd, 0);
+			return ;
 		}
 
 		std::cout << std::endl;
@@ -248,7 +249,7 @@ void Cluster::closeCluster(bool print) {
 
 	for (size_t i = 0; i < _clients.size(); i++)
 		delete _clients[i];
-		
+
 	for (size_t i = 0; i < _cgis.size(); i++)
 		delete _cgis[i];
 
@@ -269,13 +270,15 @@ void Cluster::readCgiOutput(int fd) {
 
 	do {
 		bytes_read = read(fd, buffer, 1024);
-		if (bytes_read < 0)
+		if (bytes_read < 0) {
+			std::cerr << "Error reading CGI output: " << strerror(errno) << std::endl;
 			throw std::runtime_error("read failed when reading cgi output");
+		}
 		res.append(buffer, bytes_read);
-	} while (bytes_read != 0);
+	} while (bytes_read > 0);
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
-	
+
 	request->setResponseStr(res);
 	_cgis.erase(_cgis.begin() + findCgi(fd));
 	delete cgi;
@@ -284,13 +287,13 @@ void Cluster::readCgiOutput(int fd) {
 void Cluster::executeCgi(Request &request) {
 	int			pipe_out[2];
 	std::string	cgi_file = request.getTargetFile();
-	
+
 	std::cout << "Executing CGI" << std::endl;
 
 	if (pipe(pipe_out) < 0)
 		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
 
-	setNonBlocking(pipe_out[0]);
+	// setNonBlocking(pipe_out[0]);
 	addToEpoll(pipe_out[0], EPOLLIN);
 
 	int	pid = fork();
@@ -307,7 +310,7 @@ void Cluster::executeCgi(Request &request) {
 		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
 		// char *args[] = {const_cast<char *>("hello"), NULL};
 		char **env = generateEnv(request.getBody());
-		
+
 		closeCluster(false);
 		execve(cgi_file.c_str(), args, env);
 		// execve(std::string("hello").c_str(), args, env);
@@ -317,7 +320,7 @@ void Cluster::executeCgi(Request &request) {
 	} else {
 		Cgi *cgi = new Cgi(pipe_out[0], pid, &request, std::time(NULL));
 		_cgis.push_back(cgi);
-		
+
 		close(pipe_out[1]);
 	}
 }
@@ -325,14 +328,14 @@ void Cluster::executeCgi(Request &request) {
 void Cluster::checkActiveCgi() {
 	int		status;
 	time_t	time = std::time(NULL);
-	
+
 	for (size_t i = 0; i < _cgis.size(); i++) {
 		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
-		
+
 		if (time - _cgis[i]->getStartTime() > 2.0) {
 			throw std::runtime_error("CGI timeout");
 		}
-		
+
 		if (id == 0) {
 			continue;
 		} else if (id == -1) {
@@ -344,12 +347,12 @@ void Cluster::checkActiveCgi() {
 					throw std::runtime_error("CGI process failed");
 				}
 			}
-			
+
 			delete _cgis[i];
 			_cgis.erase(_cgis.begin() + i);
 			i--;
 		}
-		
+
 	}
 }
 
