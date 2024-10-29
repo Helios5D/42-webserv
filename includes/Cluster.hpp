@@ -25,6 +25,7 @@ class Cluster {
 
 		void	start();
 		void	closeCluster(bool print);
+		void	closeFds();
 
 		void	addToEpoll(int fd, __uint32_t events);
 		void	modifyEvents(int fd, __uint32_t events);

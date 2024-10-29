@@ -27,9 +27,13 @@ int main(int argc, char **argv) {
 
 	try {
 		cluster.start();
-	} catch (std::exception &e) {
+	} catch (std::runtime_error &e) {
 		std::cerr << COL_RED << std::string("Error: ") + e.what() << COL_RESET << std::endl;
 		cluster.closeCluster(true);
+		return 1;
+	} catch (std::exception &e) {
+		cluster.closeCluster(false);
+		return 1;
 	}
 
 	return 0;

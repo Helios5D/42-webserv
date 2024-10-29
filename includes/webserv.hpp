@@ -1,5 +1,9 @@
 #pragma once
 
+// Defines //
+
+#define TIMEOUT 10.0
+
 // Includes //
 
 #include <sys/socket.h>

@@ -208,7 +208,7 @@ void Cluster::start() {
 		if (events_num < 0) {
 			if (!running)
 				break ;
-			throw std::invalid_argument("epoll_wait failed in cluster loop");
+			throw std::runtime_error("epoll_wait failed in cluster loop");
 		}
 		for (int i = 0; i < events_num; i++) {
 			int fd = events[i].data.fd;
@@ -261,6 +261,19 @@ void Cluster::closeCluster(bool print) {
 	}
 }
 
+void Cluster::closeFds() {
+	for (size_t i = 0; i < _servers.size(); i++)
+		close(_servers[i]->getFd());
+
+	for (size_t i = 0; i < _clients.size(); i++)
+		close(_clients[i]->getFd());
+
+	for (size_t i = 0; i < _cgis.size(); i++)
+		close(_cgis[i]->getFd());
+
+	close(_epoll_fd);
+}
+
 void Cluster::readCgiOutput(int fd) {
 	Cgi			*cgi = _cgis[findCgi(fd)];
 	Request		*request = cgi->getRequest();
@@ -291,7 +304,7 @@ void Cluster::checkActiveCgi() {
 	for (size_t i = 0; i < _cgis.size(); i++) {
 		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
 
-		if (time - _cgis[i]->getStartTime() > 1.0) {
+		if (time - _cgis[i]->getStartTime() > TIMEOUT) {
 			Response	&response = _cgis[i]->getClient()->getRequest()->getResponse();
 
 			kill(_cgis[i]->getPid(), SIGKILL);
@@ -351,7 +364,7 @@ void Cluster::executeCgi(Client *client) {
 		close(pipe_out[1]);
 
 		std::string path = cgi_path.substr(0, cgi_path.find_last_of('/'));
-		std::string file = cgi_path.substr(cgi_path.find_last_of('/') + 1);
+		std::string file = "." + cgi_path.substr(cgi_path.find_last_of('/'));
 
 		if (chdir(path.c_str()) < 0)
 			throw std::runtime_error("Couldnt open CGI directory");
@@ -359,11 +372,11 @@ void Cluster::executeCgi(Client *client) {
 		char *args[] = {const_cast<char *>(file.c_str()), NULL};
 		char **env = generateEnv(client);
 
-		closeCluster(false);
+		closeFds();
 		execve(file.c_str(), args, env);
 		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
 		freeEnv(env);
-		std::exit(1);
+		throw std::exception();
 	} else {
 		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
 		_cgis.push_back(cgi);
@@ -373,15 +386,21 @@ void Cluster::executeCgi(Client *client) {
 }
 
 char **Cluster::generateEnv(Client *client) {
-	std::istringstream iss(client->getRequest()->getBody());
+	Request								*request = client->getRequest();
+	std::map<std::string, std::string>	headers = request->getHeaders();
+	std::istringstream					iss(request->getBody());
+	std::string 						var;
+	std::vector<std::string>			args;
 
-	std::string var;
-	std::vector<std::string> args;
 	while (getline(iss, var, '&'))
 		args.push_back(var);
 	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	args.push_back("SERVER_NAME=" + client->getServer()->getName());
-	args.push_back("REQUEST_METHOD=" + client->getRequest()->getMethod());
+	args.push_back("REQUEST_METHOD=" + request->getMethod());
+	if (request->getHeaders().find("Content-Type") != request->getHeaders().end())
+		args.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
+	if (request->getHeaders().find("Content-Length") != request->getHeaders().end())
+		args.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
 
 	char **env = new char*[args.size() + 1];
 
