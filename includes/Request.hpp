@@ -6,10 +6,11 @@
 #include "Response.hpp"
 
 class Cluster;
+class Client;
 
 class Request {
 	public:
-		Request(const int &fd, const Server &server, Cluster &cluster);
+		Request(const int &fd, Client *client, Cluster &cluster);
 		~Request();
 
 		void										handleRequest();
@@ -23,6 +24,7 @@ class Request {
 		void										setResponseStr(const std::string &responseStr);
 
 	private:
+		Client								*_client;
 		const Server						&_server;
 		Cluster								&_cluster;
 		Response							_response;
@@ -41,5 +43,4 @@ class Request {
 		bool	_checkTarget();
 		bool	_addHeader(const std::string &headerLine);
 		void	_handleDelete();
-		void	_handlePost();
 };

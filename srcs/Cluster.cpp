@@ -116,7 +116,7 @@ void Cluster::handleClient(int fd) {
 
 void Cluster::handleRequest(int fd) {
 	Client	*client = _clients[findClient(fd)];
-	Request	*request = new Request(fd, *(client->getServer()), *this);
+	Request	*request = new Request(fd, client, *this);
 
 	request->handleRequest();
 
