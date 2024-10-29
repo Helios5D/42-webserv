@@ -18,7 +18,9 @@ Request::Request(const int &fd, const Server &server, Cluster &cluster)
 	bool		isBeginning = true;
 	size_t		bodyLength = 0;
 
-	while ((bytesRead = read(fd, buffer, bufferSize)) > 0 && (isBeginning || bodyLength < (unsigned long)_contentLength)) {
+	while ((bytesRead = read(fd, buffer, bufferSize - 1)) > 0 && (isBeginning || bodyLength < (unsigned long)_contentLength)) {
+		buffer[bytesRead] = '\0';
+
 		if (isBeginning) {
 			const char *headersEnd = std::strstr(buffer, "\r\n\r\n");
 
