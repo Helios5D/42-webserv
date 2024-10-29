@@ -1,12 +1,6 @@
 #!/usr/bin/python3
 import os
-import sys
 from datetime import datetime, date
-import urllib.parse
-
-content_length = int(os.environ.get('CONTENT_LENGTH', 0))
-post_data = sys.stdin.read(content_length)
-form = urllib.parse.parse_qs(post_data)
 
 first_name = os.getenv('first_name')
 last_name = os.getenv('last_name')

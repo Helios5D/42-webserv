@@ -11,6 +11,8 @@ body = f"""
 </html>
 """
 
-print("Content-Length: %d\r" % len(body))
+content_length = len(body)
+
+print(f"Content-Length: {content_length}\r")
 print ("Content-Type: text/html\r\n\r")
 print(body)
