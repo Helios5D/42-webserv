@@ -110,7 +110,6 @@ body += """
 
 content_length = len(body)
 
-print("HTTP/1.1 200 OK\r")
 print("Content-type: text/html\r")
 print(f"Content-Length: {content_length}\r\n")
 print(body)
