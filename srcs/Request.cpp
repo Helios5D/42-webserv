@@ -88,7 +88,6 @@ Request::~Request() {}
 
 bool Request::_checkTarget() {
 	std::string	route = _targetRoute;
-	bool		isSlash = false;
 
 	if (_targetRoute[0] != '/') {
 		_response.setMessage("Malformed route.");
@@ -96,19 +95,7 @@ bool Request::_checkTarget() {
 		return false;
 	}
 
-	std::string::iterator routeIt = route.begin();
-	while (routeIt != route.end()) {
-		if (*routeIt == '/') {
-			if (!isSlash) {
-				isSlash = true;
-				routeIt++;
-			} else
-				routeIt = route.erase(routeIt);
-		} else {
-			isSlash = false;
-			routeIt++;
-		}
-	}
+	removeMultipleSlashes(route);
 
 	while (!route.empty()) {
 		std::vector<t_location>::const_iterator it = _server.getLocations().begin();
@@ -141,6 +128,7 @@ bool Request::_checkTarget() {
 				return false;
 			}
 
+			removeMultipleSlashes(_targetFile);
 			_response.setFilePath(_targetFile);
 			break ;
 		}

@@ -69,6 +69,24 @@ void replaceFirstOccurence(std::string &str, const std::string &from, const std:
 	}
 }
 
+void removeMultipleSlashes(std::string &path) {
+	std::string::iterator	it = path.begin();
+	bool					isSlash = false;
+
+	while (it != path.end()) {
+		if (*it == '/') {
+			if (!isSlash) {
+				isSlash = true;
+				it++;
+			} else
+				it = path.erase(it);
+		} else {
+			isSlash = false;
+			it++;
+		}
+	}
+}
+
 void initializeCodesResponses() {
 	g_codes_responses[100] = "Continue";
 	g_codes_responses[101] = "Switching Protocols";

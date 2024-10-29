@@ -45,6 +45,7 @@ void	getFileExtension(const std::string &filePath, std::string &extension);
 void	generateFileName(std::string &fileName);
 bool	isDirectory(const std::string &path);
 void	replaceFirstOccurence(std::string &str, const std::string &from, const std::string &to);
+void	removeMultipleSlashes(std::string &path);
 void	initializeCodesResponses();
 void	initializeContentTypes();
 
