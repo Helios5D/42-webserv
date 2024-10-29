@@ -9,7 +9,7 @@ bool Request::_isBody() {
 }
 
 Request::Request(const int &fd, Client *client, Cluster &cluster)
-		: _client(client), _server(*(_client->getServer())), _cluster(cluster), _response(_server), _location(NULL), _contentLength(-1), _isCgi(false)
+		: _client(client), _server(*(_client->getServer())), _cluster(cluster), _response(_server, _headers), _location(NULL), _contentLength(-1), _isCgi(false)
 {
 	std::string	headers;
 	int			bytesRead;

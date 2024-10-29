@@ -5,7 +5,7 @@
 
 class Response {
 	public:
-		Response(const Server &server);
+		Response(const Server &server, const std::map<std::string, std::string> &requestHeaders);
 		~Response();
 
 		void				createResponse();
@@ -23,15 +23,16 @@ class Response {
 		const std::string	&getResponseStr() const;
 
 	private:
-		const Server						&_server;
-		int									_code;
-		std::string							_method;
-		std::string							_filePath;
-		std::string							_message;
-		std::string							_body;
-		std::map<std::string, std::string>	_headers;
-		std::string							_responseStr;
-		bool								_isCgi;
+		const Server								&_server;
+		int											_code;
+		std::string									_method;
+		std::string									_filePath;
+		std::string									_message;
+		std::string									_body;
+		std::map<std::string, std::string>			_headers;
+		const std::map<std::string, std::string>	&_requestHeaders;
+		std::string									_responseStr;
+		bool										_isCgi;
 
 		void	_createBody();
 		void	_findContentType();

@@ -1,7 +1,8 @@
 #include "Response.hpp"
 
-Response::Response(const Server &server)
-		: _server(server), _code(200), _method("GET"), _filePath("./pages/fallback.html"), _isCgi(false) {}
+Response::Response(const Server &server, const std::map<std::string, std::string> &requestHeaders)
+		: _server(server), _code(200), _method("GET"), _filePath("./pages/fallback.html"), _requestHeaders(requestHeaders), _isCgi(false)
+{}
 
 Response::~Response() {}
 
@@ -67,6 +68,19 @@ std::string listDirectory(const std::string &path) {
 	return directoryListing;
 }
 
+std::string readFile(const std::string &path) {
+	std::ifstream file(path.c_str());
+
+	if (file.is_open()) {
+		std::stringstream buf;
+
+		buf << file.rdbuf();
+		file.close();
+		return buf.str();
+	} else
+		throw std::exception();
+}
+
 void Response::_createBody() {
 	if (_code == 200) {
 		if (_method == "DELETE") {
@@ -78,35 +92,51 @@ void Response::_createBody() {
 			_body = _message;
 			_headers["content-type"] = "text/plain";
 		} else {
-			if (isDirectory(_filePath)) {
-				std::ifstream file("./web/pages/directory_listing.html");
+			if (_filePath == "./web/login/login.html") {
+				std::map<std::string, std::string>::const_iterator	it;
+				std::string											keyEqual;
+				size_t												start;
 
-				if (file.is_open()) {
-					std::stringstream buf;
+				it = _requestHeaders.find("cookie");
+				keyEqual = "username=";
+				if (it != _requestHeaders.end() && (start = (*it).second.find_first_of(keyEqual)) != std::string::npos) {
+					start += keyEqual.length();
+					std::string	username = (*it).second.substr(start, (*it).second.find(';', start) - start);
 
-					buf << file.rdbuf();
-					_body = buf.str();
-					replaceFirstOccurence(_body, "[DIRECTORY LISTING]", listDirectory(_filePath));
-
-					_headers["content-type"] = "text/html";
-					file.close();
+					try {
+						_body = readFile("./web/login/logged_in.html");
+						replaceFirstOccurence(_body, "[USER]", username);
+						_headers["content-type"] = "text/html";
+					} catch (const std::exception &_) {
+						_code = 404;
+						_message = "The resource you're looking for does not exist.";
+						_createBody();
+					}
 				} else {
+					try {
+						_body = readFile("./web/login/login.html");
+						_headers["content-type"] = "text/html";
+					} catch (const std::exception &_) {
+						_code = 404;
+						_message = "The resource you're looking for does not exist.";
+						_createBody();
+					}
+				}
+			} else if (isDirectory(_filePath)) {
+				try {
+					_body = readFile("./web/pages/directory_listing.html");
+					replaceFirstOccurence(_body, "[DIRECTORY LISTING]", listDirectory(_filePath));
+					_headers["content-type"] = "text/html";
+				} catch (const std::exception &_) {
 					_body = _message;
 					_headers["content-type"] = "text/plain";
 				}
 			} else {
-				std::ifstream file(_filePath.c_str());
-
-				if (file.is_open()) {
-					std::stringstream buf;
-
-					buf << file.rdbuf();
-					_body = buf.str();
-
+				try {
+					_body = readFile(_filePath.c_str());
 					_findContentType();
 					_message = "Requested file was successfully returned.";
-					file.close();
-				} else {
+				} catch (const std::exception &_) {
 					_code = 404;
 					_message = "The resource you're looking for does not exist.";
 					_createBody();
@@ -118,18 +148,11 @@ void Response::_createBody() {
 		std::map<int, std::string>::const_iterator it = errorPages.find(_code);
 
 		if (it != errorPages.end()) {
-			std::ifstream errorPageFile((*it).second.c_str());
-
-			if (errorPageFile.is_open()) {
-				std::stringstream buf;
-
-				buf << errorPageFile.rdbuf();
-				_body = buf.str();
+			try {
+				_body = readFile((*it).second.c_str());
 				replaceFirstOccurence(_body, "[MESSAGE]", _message);
-
 				_headers["content-type"] = "text/html";
-				errorPageFile.close();
-			} else {
+			} catch (const std::exception &_) {
 				_body = _message;
 				_headers["content-type"] = "text/plain";
 			}
