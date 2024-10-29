@@ -231,6 +231,7 @@ void Cluster::start() {
 				}
 			}
 		}
+		checkActiveCgi();
 	}
 
 	closeCluster(true);
