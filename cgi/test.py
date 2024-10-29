@@ -1,12 +1,17 @@
 #!/usr/bin/python3
+
+body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test CGI</title>
+<body>
+<h2>I guess i'm the output of a CGI huh ?</h2>
+</body>
+</html>
+"""
+
 print("HTTP/1.1 200 OK\r")
+print("Content-Length: %d\r" % len(body))
 print ("Content-Type: text/html\r\n\r")
-print('<!DOCTYPE html>')
-print ('<html>')
-print ('<head>')
-print ('<title>Hello Word - First CGI Program</title>')
-print ('</head>')
-print ('<body>')
-print ('<h2>Hello Word! This is my first CGI program</h2>')
-print ('</body>')
-print ('</html>')
+print(body)
