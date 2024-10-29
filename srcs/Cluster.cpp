@@ -292,14 +292,17 @@ void Cluster::checkActiveCgi() {
 		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
 
 		if (time - _cgis[i]->getStartTime() > 2.0) {
-			Request *request = _cgis[i]->getClient()->getRequest();
+			Request		*request = _cgis[i]->getClient()->getRequest();
+			Response	&response = request->getResponse();
+
 			kill(_cgis[i]->getPid(), SIGKILL);
 			delete _cgis[i];
 			_cgis.erase(_cgis.begin() + i);
 			i--;
 
-			request->getResponse().setCode(504);
-			request->getResponse().setMessage("Timeout");
+			response.setCode(504);
+			response.setMessage("CGI timed out.");
+			response.createResponse();
 		}
 
 		if (id == 0) {
@@ -326,8 +329,6 @@ void Cluster::executeCgi(Client *client) {
 	Request		*request = client->getRequest();
 	int			pipe_out[2];
 	std::string	cgi_path = request->getTargetFile();
-
-	std::cout << "Executing CGI" << std::endl;
 
 	if (pipe(pipe_out) < 0)
 		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_path);

@@ -27,6 +27,10 @@ void Config::fillEmptyFields(t_cluster_config &cluster) {
 			server.error_pages[423] = "./web/errors/423.html";
 		if (server.error_pages.find(500) == server.error_pages.end())
 			server.error_pages[500] = "./web/errors/500.html";
+		if (server.error_pages.find(502) == server.error_pages.end())
+			server.error_pages[502] = "./web/errors/502.html";
+		if (server.error_pages.find(504) == server.error_pages.end())
+			server.error_pages[504] = "./web/errors/504.html";
 		if (server.error_pages.find(505) == server.error_pages.end())
 			server.error_pages[505] = "./web/errors/505.html";
 		if (server.locations.empty())
