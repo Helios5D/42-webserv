@@ -269,7 +269,7 @@ void Request::handleRequest() {
 	} else if (_method == "DELETE")
 		_handleDelete();
 	else if (_isCgi)
-		_cluster.executeCgi(*this);
+		_cluster.executeCgi(_client);
 	else if (_method == "POST") {
 		_response.setCode(405);
 		_response.setMessage("A POST request cannot be executed on something else than a CGI.");
@@ -310,6 +310,10 @@ const std::map<std::string, std::string> &Request::getHeaders() const {
 
 const std::string &Request::getBody() const {
 	return _body;
+}
+
+Response &Request::getResponse() {
+	return _response;
 }
 
 const Response &Request::getResponse() const {

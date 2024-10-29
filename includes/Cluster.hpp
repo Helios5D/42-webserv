@@ -19,7 +19,7 @@ class Cluster {
 				~Cluster();
 
 		bool	isServerFd(int fd);
-		
+
 		ssize_t	findClient(int fd);
 		ssize_t	findCgi(int fd);
 
@@ -36,8 +36,8 @@ class Cluster {
 		void	handleResponse(int fd);
 		void	disconnectClient(int fd, bool error);
 
-		void	executeCgi(Request &request);
-		char	**generateEnv(std::string body);
+		void	executeCgi(Client *client);
+		char	**generateEnv(Client *client);
 		void	freeEnv(char **env);
 		void	readCgiOutput(int fd);
 		void	checkActiveCgi();

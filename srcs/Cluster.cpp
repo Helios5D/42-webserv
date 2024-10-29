@@ -118,9 +118,8 @@ void Cluster::handleRequest(int fd) {
 	Client	*client = _clients[findClient(fd)];
 	Request	*request = new Request(fd, client, *this);
 
-	request->handleRequest();
-
 	client->setRequest(request);
+	request->handleRequest();
 
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;
@@ -280,50 +279,9 @@ void Cluster::readCgiOutput(int fd) {
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
 
-	request->setResponseStr(res);
+	request->setResponseStr("HTTP/1.1 200 OK\r\n" + res);
 	_cgis.erase(_cgis.begin() + findCgi(fd));
 	delete cgi;
-}
-
-void Cluster::executeCgi(Request &request) {
-	int			pipe_out[2];
-	std::string	cgi_file = request.getTargetFile();
-
-	std::cout << "Executing CGI" << std::endl;
-
-	if (pipe(pipe_out) < 0)
-		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_file);
-
-	// setNonBlocking(pipe_out[0]);
-	addToEpoll(pipe_out[0], EPOLLIN);
-
-	int	pid = fork();
-	if (pid < 0)
-		throw std::runtime_error("Fork failed when executing CGI: " + cgi_file);
-	else if (!pid) {
-		running = false;
-		if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
-			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_file);
-
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-
-		char *args[] = {const_cast<char *>(cgi_file.c_str()), NULL};
-		// char *args[] = {const_cast<char *>("hello"), NULL};
-		char **env = generateEnv(request.getBody());
-
-		closeCluster(false);
-		execve(cgi_file.c_str(), args, env);
-		// execve(std::string("hello").c_str(), args, env);
-		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
-		freeEnv(env);
-		std::exit(1);
-	} else {
-		Cgi *cgi = new Cgi(pipe_out[0], pid, &request, std::time(NULL));
-		_cgis.push_back(cgi);
-
-		close(pipe_out[1]);
-	}
 }
 
 void Cluster::checkActiveCgi() {
@@ -334,7 +292,14 @@ void Cluster::checkActiveCgi() {
 		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
 
 		if (time - _cgis[i]->getStartTime() > 2.0) {
-			throw std::runtime_error("CGI timeout");
+			Request *request = _cgis[i]->getClient()->getRequest();
+			kill(_cgis[i]->getPid(), SIGKILL);
+			delete _cgis[i];
+			_cgis.erase(_cgis.begin() + i);
+			i--;
+
+			request->getResponse().setCode(504);
+			request->getResponse().setMessage("Timeout");
 		}
 
 		if (id == 0) {
@@ -357,13 +322,63 @@ void Cluster::checkActiveCgi() {
 	}
 }
 
-char **Cluster::generateEnv(std::string body) {
-	std::istringstream iss(body);
+void Cluster::executeCgi(Client *client) {
+	Request		*request = client->getRequest();
+	int			pipe_out[2];
+	std::string	cgi_path = request->getTargetFile();
+
+	std::cout << "Executing CGI" << std::endl;
+
+	if (pipe(pipe_out) < 0)
+		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_path);
+
+	// setNonBlocking(pipe_out[0]);
+	addToEpoll(pipe_out[0], EPOLLIN);
+
+	int	pid = fork();
+	if (pid < 0)
+		throw std::runtime_error("Fork failed when executing CGI: " + cgi_path);
+	else if (!pid) {
+		running = false;
+		if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
+			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_path);
+
+		close(pipe_out[0]);
+		close(pipe_out[1]);
+
+		std::string path = cgi_path.substr(0, cgi_path.find_last_of('/'));
+		std::string file = cgi_path.substr(cgi_path.find_last_of('/') + 1);
+
+		if (chdir(path.c_str()) < 0)
+			throw std::runtime_error("Couldnt open CGI directory");
+
+		char *args[] = {const_cast<char *>(file.c_str()), NULL};
+		char **env = generateEnv(client);
+
+		closeCluster(false);
+		execve(file.c_str(), args, env);
+		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
+		freeEnv(env);
+		std::exit(1);
+	} else {
+		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
+		_cgis.push_back(cgi);
+
+		close(pipe_out[1]);
+	}
+}
+
+char **Cluster::generateEnv(Client *client) {
+	std::istringstream iss(client->getRequest()->getBody());
 
 	std::string var;
 	std::vector<std::string> args;
 	while (getline(iss, var, '&'))
 		args.push_back(var);
+	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	args.push_back("SERVER_NAME=" + client->getServer()->getName());
+	args.push_back("REQUEST_METHOD=" + client->getRequest()->getMethod());
+
 	char **env = new char*[args.size() + 1];
 
 	size_t i;

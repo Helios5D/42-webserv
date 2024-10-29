@@ -1,7 +1,7 @@
 #include "Cgi.hpp"
 
-Cgi::Cgi(int fd, int pid, Request *request, time_t start_time)
-: _fd(fd), _pid(pid), _request(request), _start_time(start_time)
+Cgi::Cgi(int fd, int pid, Client *client, time_t start_time)
+: _fd(fd), _pid(pid), _client(client), _request(client->getRequest()), _start_time(start_time)
 {}
 
 Cgi::~Cgi() {
@@ -18,6 +18,10 @@ int Cgi::getFd() {
 
 int Cgi::getPid() {
 	return _pid;
+}
+
+Client *Cgi::getClient() {
+	return _client;
 }
 
 Request *Cgi::getRequest() {
