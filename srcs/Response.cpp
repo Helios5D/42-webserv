@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
 Response::Response(const Server &server)
-		: _server(server), _code(200), _method("GET"), _filePath("./pages/fallback.html") {}
+		: _server(server), _code(200), _method("GET"), _filePath("./pages/fallback.html"), _isCgi(false) {}
 
 Response::~Response() {}
 
@@ -69,12 +69,12 @@ std::string listDirectory(const std::string &path) {
 
 void Response::_createBody() {
 	if (_code == 200) {
-		if (_method == "POST") {
-			_message = "POST request was successfully processed.";
+		if (_method == "DELETE") {
+			_message = "File was successfully deleted.";
 			_body = _message;
 			_headers["content-type"] = "text/plain";
-		} else if (_method == "DELETE") {
-			_message = "File was successfully deleted.";
+		} else if (_isCgi) {
+			_message = "Requested CGI was successfully executed.";
 			_body = _message;
 			_headers["content-type"] = "text/plain";
 		} else {
@@ -160,6 +160,10 @@ void Response::setMessage(const std::string &message) {
 
 void Response::setResponseStr(const std::string &responseStr) {
 	_responseStr = responseStr;
+}
+
+void Response::setIsCgi(const bool &isCgi) {
+	_isCgi = isCgi;
 }
 
 void Response::addHeader(const std::string &key, const std::string &value) {

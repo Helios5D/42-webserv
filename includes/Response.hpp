@@ -15,6 +15,7 @@ class Response {
 		void				setFilePath(const std::string &filePath);
 		void				setMessage(const std::string &message);
 		void				setResponseStr(const std::string &responseStr);
+		void				setIsCgi(const bool &isCgi);
 		void				addHeader(const std::string &key, const std::string &value);
 
 		int					getCode() const;
@@ -30,6 +31,7 @@ class Response {
 		std::string							_body;
 		std::map<std::string, std::string>	_headers;
 		std::string							_responseStr;
+		bool								_isCgi;
 
 		void	_createBody();
 		void	_findContentType();

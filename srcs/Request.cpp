@@ -9,7 +9,7 @@ bool Request::_isBody() {
 }
 
 Request::Request(const int &fd, const Server &server, Cluster &cluster)
-		: _server(server), _cluster(cluster), _response(server), _location(NULL), _contentLength(-1)
+		: _server(server), _cluster(cluster), _response(server), _location(NULL), _contentLength(-1), _isCgi(false)
 {
 	std::string	headers;
 	int			bytesRead;
@@ -73,6 +73,14 @@ Request::Request(const int &fd, const Server &server, Cluster &cluster)
 				bodyLength = _body.length();
 			}
 		}
+	}
+
+	std::string extension;
+	getFileExtension(_targetFile, extension);
+
+	if (!extension.empty() && '.' + extension == _location->cgi_extension) {
+		_isCgi = true;
+		_response.setIsCgi(true);
 	}
 }
 
@@ -260,8 +268,12 @@ void Request::handleRequest() {
 		_response.setCode(405);
 	} else if (_method == "DELETE")
 		_handleDelete();
-	else if (_method == "POST")
-		_handlePost();
+	else if (_isCgi)
+		_cluster.executeCgi(*this);
+	else if (_method == "POST") {
+		_response.setCode(405);
+		_response.setMessage("A POST request cannot be executed on something else than a CGI.");
+	}
 
 	_response.createResponse();
 }
@@ -281,18 +293,6 @@ void Request::_handleDelete() {
 			_response.setCode(500);
 			_response.setMessage("File could not be deleted.");
 		}
-	}
-}
-
-void Request::_handlePost() {
-	std::string extension;
-	getFileExtension(_targetFile, extension);
-
-	if (!extension.empty() && '.' + extension == _location->cgi_extension) {
-		_cluster.executeCgi(*this);
-	} else {
-		_response.setCode(405);
-		_response.setMessage("A POST request cannot be executed on something else than a CGI.");
 	}
 }
 

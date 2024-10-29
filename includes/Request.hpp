@@ -34,6 +34,7 @@ class Request {
 		std::map<std::string, std::string>	_headers;
 		std::string							_body;
 		long								_contentLength;
+		bool								_isCgi;
 
 		bool	_isBody();
 		bool	_checkStartLine();
