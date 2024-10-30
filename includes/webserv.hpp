@@ -2,7 +2,7 @@
 
 // Defines //
 
-#define TIMEOUT 10.0
+#define TIMEOUT 2.0
 
 // Includes //
 

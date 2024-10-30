@@ -18,7 +18,7 @@ void Client::setResponseReady(bool ready) {
 	_response_ready = ready;
 }
 
-bool Client::isResponsReady() {
+bool Client::isResponseReady() {
 	return _response_ready;
 }
 

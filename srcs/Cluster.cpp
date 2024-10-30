@@ -54,7 +54,7 @@ ssize_t Cluster::findClient(int fd) {
 
 ssize_t Cluster::findCgi(int fd) {
 	for (size_t i = 0; i < _cgis.size(); i++) {
-		if (_cgis[i]->getFd() == fd)
+		if (_cgis[i]->getFdOut() == fd || _cgis[i]->getFdOut() == fd)
 			return i;
 	}
 	return -1;
@@ -236,7 +236,7 @@ void Cluster::start() {
 				else {
 					if (events[i].events & EPOLLIN)
 						handleRequest(fd);
-					if ((events[i].events & EPOLLOUT) && _clients[findClient(fd)]->isResponsReady()
+					if (findClient(fd) != -1 && (events[i].events & EPOLLOUT) && _clients[findClient(fd)]->isResponseReady()
 						&& _cgis.empty())
 						handleResponse(fd);
 				}
@@ -279,8 +279,10 @@ void Cluster::closeFds() {
 	for (size_t i = 0; i < _clients.size(); i++)
 		close(_clients[i]->getFd());
 
-	for (size_t i = 0; i < _cgis.size(); i++)
-		close(_cgis[i]->getFd());
+	for (size_t i = 0; i < _cgis.size(); i++) {
+		close(_cgis[i]->getFdIn());
+		close(_cgis[i]->getFdOut());
+	}
 
 	close(_epoll_fd);
 }
@@ -360,9 +362,17 @@ int Cluster::checkCgiTimeout(Cgi *cgi) {
 void Cluster::executeCgi(Client *client) {
 	Request		*request = client->getRequest();
 	int			pipe_out[2];
+	int			pipe_in[2];
 	std::string	cgi_path = request->getTargetFile();
 
 	if (pipe(pipe_out) < 0) {
+		generateErrorResponse(request->getResponse(), 500,
+			"System function call fail", "pipe function failed when executing CGI");
+		return ;
+	}
+	if (pipe(pipe_in) < 0) {
+		close(pipe_in[0]);
+		close(pipe_in[1]);
 		generateErrorResponse(request->getResponse(), 500,
 			"System function call fail", "pipe function failed when executing CGI");
 		return ;
@@ -374,15 +384,25 @@ void Cluster::executeCgi(Client *client) {
 	if (pid < 0) {
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pipe_out[0], 0) < 0)
 			throw std::runtime_error("epoll_ctl failed when removing cgi");
+		if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pipe_in[1], 0) < 0)
+			throw std::runtime_error("epoll_ctl failed when removing cgi");
+
+		close(pipe_out[0]);
+		close(pipe_out[1]);
+		close(pipe_in[0]);
+		close(pipe_in[1]);
+
 		generateErrorResponse(request->getResponse(), 500,
 			"System function call fail", "fork function failed when executing CGI");
 	} else if (!pid) {
 		running = false;
-		if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
+		if (dup2(pipe_out[1], STDOUT_FILENO) < 0 || dup2(pipe_in[0], STDIN_FILENO) < 0)
 			throw std::logic_error("Dup2 failed when executing CGI: " + cgi_path);
 
 		close(pipe_out[0]);
 		close(pipe_out[1]);
+		close(pipe_in[0]);
+		close(pipe_in[1]);
 
 		std::string path = cgi_path.substr(0, cgi_path.find_last_of('/'));
 		std::string file = "." + cgi_path.substr(cgi_path.find_last_of('/'));
@@ -398,9 +418,13 @@ void Cluster::executeCgi(Client *client) {
 		freeEnv(env);
 		throw std::exception();
 	} else {
-		close(pipe_out[1]);
+		write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
 
-		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
+		close(pipe_in[1]);
+		close(pipe_out[1]);
+		close(pipe_in[0]);
+
+		Cgi *cgi = new Cgi(pipe_in[1], pipe_out[0], pid, client, std::time(NULL));
 
 		if (checkCgiTimeout(cgi) == 0)
 			_cgis.push_back(cgi);
