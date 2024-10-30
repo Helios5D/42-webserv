@@ -30,6 +30,7 @@ class Cluster {
 		void	closeFds();
 
 		void	addToEpoll(int fd, __uint32_t events);
+		void	deleteFromEpoll(int fd);
 		void	modifyEvents(int fd, __uint32_t events);
 		void	setNonBlocking(int fd);
 

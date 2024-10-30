@@ -54,13 +54,13 @@ ssize_t Cluster::findClient(int fd) {
 
 ssize_t Cluster::findCgi(int fd) {
 	for (size_t i = 0; i < _cgis.size(); i++) {
-		if (_cgis[i]->getFdOut() == fd || _cgis[i]->getFdOut() == fd)
+		if (_cgis[i]->getFd() == fd)
 			return i;
 	}
 	return -1;
 }
 
-void	Cluster::addToEpoll(int fd, __uint32_t events) {
+void Cluster::addToEpoll(int fd, __uint32_t events) {
 	struct epoll_event	event;
 	event.events = events;
 	event.data.fd = fd;
@@ -68,15 +68,20 @@ void	Cluster::addToEpoll(int fd, __uint32_t events) {
 		throw std::runtime_error("epoll_ctl failed when adding fd");
 }
 
-void	Cluster::modifyEvents(int fd, __uint32_t events) {
+void Cluster::deleteFromEpoll(int fd) {
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
+		throw std::runtime_error("epoll_ctl failed when removing fd");
+}
+
+void Cluster::modifyEvents(int fd, __uint32_t events) {
 	struct epoll_event	event;
 	event.events = events;
 	event.data.fd = fd;
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
-		throw std::runtime_error("epoll_ctl failed when adding fd");
+		throw std::runtime_error("epoll_ctl failed when modifying fd events");
 }
 
-void	Cluster::setNonBlocking(int fd) {
+void Cluster::setNonBlocking(int fd) {
 	int	flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1)
 		throw std::runtime_error("Getting flags with fcntl failed");
@@ -134,18 +139,18 @@ void Cluster::handleRequest(int fd) {
 }
 
 void Cluster::handleResponse(int fd) {
-
-
 	std::cout << COL_CYAN << "==============================" << std::endl;
 	std::cout << "      📤 Server Response      " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 
-	Client *client = _clients[findClient(fd)];
-	Request *request = client->getRequest();
-	const Response &response = request->getResponse();
+	Client			*client = _clients[findClient(fd)];
+	Request			*request = client->getRequest();
+	const Response	&response = request->getResponse();
 
 	std::string message = response.getResponseStr();
 	size_t total_size = message.size();
+
+	std::cout << request->getBody() << std::endl;
 
 	ssize_t bytes_sent = send(fd, message.c_str() + client->bytes_sent, total_size - client->bytes_sent, 0);
 	if (bytes_sent > 0)
@@ -184,8 +189,7 @@ void Cluster::disconnectClient(int fd) {
 	std::cout << "     🔌 Client Disconnect     " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 
-	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
-		throw std::runtime_error("epoll_ctl failed when removing client");
+	deleteFromEpoll(fd);
 	_clients.erase(_clients.begin() + findClient(fd));
 
 	delete client;
@@ -280,8 +284,7 @@ void Cluster::closeFds() {
 		close(_clients[i]->getFd());
 
 	for (size_t i = 0; i < _cgis.size(); i++) {
-		close(_cgis[i]->getFdIn());
-		close(_cgis[i]->getFdOut());
+		close(_cgis[i]->getFd());
 	}
 
 	close(_epoll_fd);
@@ -308,8 +311,7 @@ void Cluster::readCgiOutput(int fd) {
 		res.append(buffer, bytes_read);
 	} while (bytes_read > 0);
 
-	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
-		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
+	deleteFromEpoll(fd);
 	request->setResponseStr("HTTP/1.1 200 OK\r\n" + res);
 	_cgis.erase(_cgis.begin() + findCgi(fd));
 	delete cgi;
@@ -329,6 +331,7 @@ int Cluster::checkCgiTimeout(Cgi *cgi) {
 			generateErrorResponse(response, 504,
 				"CGI timed out.", "CGI timed out");
 
+			deleteFromEpoll(cgi->getFd());
 			delete cgi;
 			return 1;
 		}
@@ -336,6 +339,7 @@ int Cluster::checkCgiTimeout(Cgi *cgi) {
 		if (id == 0) {
 			continue;
 		} else if (id == -1) {
+			deleteFromEpoll(cgi->getFd());
 			delete cgi;
 			throw std::runtime_error("waitpid failed when waiting for CGI process");
 		} else {
@@ -348,11 +352,14 @@ int Cluster::checkCgiTimeout(Cgi *cgi) {
 				else if (exit_code == 2)
 					generateErrorResponse(response, 500,
 						"System function call fail", "Child process system function call failed");
-				else
+				else {
 					generateErrorResponse(response, 502,
 						"CGI execution failed.", "CGI execution failed");
+					perror("Error :");
+				}
 			}
 
+			deleteFromEpoll(cgi->getFd());
 			delete cgi;
 			return 1;
 		}
@@ -382,10 +389,7 @@ void Cluster::executeCgi(Client *client) {
 
 	int	pid = fork();
 	if (pid < 0) {
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pipe_out[0], 0) < 0)
-			throw std::runtime_error("epoll_ctl failed when removing cgi");
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pipe_in[1], 0) < 0)
-			throw std::runtime_error("epoll_ctl failed when removing cgi");
+		deleteFromEpoll(pipe_out[0]);
 
 		close(pipe_out[0]);
 		close(pipe_out[1]);
@@ -418,13 +422,14 @@ void Cluster::executeCgi(Client *client) {
 		freeEnv(env);
 		throw std::exception();
 	} else {
-		write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
+		if (!request->getBody().empty())
+			write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
 
 		close(pipe_in[1]);
 		close(pipe_out[1]);
 		close(pipe_in[0]);
 
-		Cgi *cgi = new Cgi(pipe_in[1], pipe_out[0], pid, client, std::time(NULL));
+		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
 
 		if (checkCgiTimeout(cgi) == 0)
 			_cgis.push_back(cgi);
@@ -443,10 +448,10 @@ char **Cluster::generateEnv(Client *client) {
 	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	args.push_back("SERVER_NAME=" + client->getServer()->getName());
 	args.push_back("REQUEST_METHOD=" + request->getMethod());
-	if (request->getHeaders().find("Content-Type") != request->getHeaders().end())
-		args.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
-	if (request->getHeaders().find("Content-Length") != request->getHeaders().end())
-		args.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
+	if (request->getHeaders().find("content-type") != request->getHeaders().end())
+		args.push_back("CONTENT_TYPE=" + headers["content-type"]);
+	if (request->getHeaders().find("content-length") != request->getHeaders().end())
+		args.push_back("CONTENT_LENGTH=" + headers["content-length"]);
 
 	char **env = new char*[args.size() + 1];
 

@@ -20,10 +20,11 @@
 <body>
 	<div>
 		<h1> Test uploading files </h1>
-		<form action="/" method="POST">
-		<input type="file" name="file" required>
-		<br><br>
-		<button type="submit">Upload</button>
+		<form action="/cgi/upload.py" method="POST" enctype="multipart/form-data">
+			<input type="file" name="file" required>
+			<br><br>
+			<button type="submit">Upload</button>
+		</form>
 	<div>
 </body>
 </html>
