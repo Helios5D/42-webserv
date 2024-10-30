@@ -150,8 +150,6 @@ void Cluster::handleResponse(int fd) {
 	std::string message = response.getResponseStr();
 	size_t total_size = message.size();
 
-	std::cout << request->getBody() << std::endl;
-
 	ssize_t bytes_sent = send(fd, message.c_str() + client->bytes_sent, total_size - client->bytes_sent, 0);
 	if (bytes_sent > 0)
 		client->bytes_sent += static_cast<size_t>(bytes_sent);
