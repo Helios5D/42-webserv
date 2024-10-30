@@ -11,9 +11,10 @@ if ((not content_length) or (not content_type)):
 	sys.exit(1)
 
 boundary = content_type.split("boundary=")[-1]
+boundary_b = b"--" + boundary.encode()
 input_data = sys.stdin.buffer.read(int(content_length))
 
-split_input = input_data.split(boundary.encode())
+split_input = input_data.split(boundary_b)
 
 for content in split_input:
 	if b"filename" in content:
