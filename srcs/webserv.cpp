@@ -23,17 +23,25 @@ int main(int argc, char **argv) {
 	initializeCodesResponses();
 	initializeContentTypes();
 
-	Cluster cluster(config);
+	while (1) {
+		Cluster cluster(config);
 
-	try {
-		cluster.start();
-	} catch (std::runtime_error &e) {
-		std::cerr << COL_RED << std::string("Error: ") + e.what() << COL_RESET << std::endl;
-		cluster.closeCluster(true);
-		return 1;
-	} catch (std::exception &e) {
-		cluster.closeCluster(false);
-		return 1;
+		try {
+			cluster.start();
+			return 0;
+		} catch (std::runtime_error &e) {
+			std::cerr << std::string(" 🔴 [ERROR] ") + e.what() << std::endl << std::endl;
+			std::cout << " 🔵 [INFO] Restarting server ..." << std::endl;
+
+			cluster.closeCluster(true);
+
+		} catch (std::logic_error &e) {
+			cluster.closeCluster(false);
+			return 2;
+		} catch (std::exception &e) {
+			cluster.closeCluster(false);
+			return 1;
+		}
 	}
 
 	return 0;

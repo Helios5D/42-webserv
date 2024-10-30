@@ -2,10 +2,12 @@
 
 #include "Client.hpp"
 #include "Cgi.hpp"
+#include "Response.hpp"
 
 class Request;
 class Client;
 class Cgi;
+class Response;
 
 class Cluster {
 	private:
@@ -35,11 +37,12 @@ class Cluster {
 		void	handleClient(int fd);
 		void	handleRequest(int fd);
 		void	handleResponse(int fd);
-		void	disconnectClient(int fd, bool error);
+		void	disconnectClient(int fd);
+		void	generateErrorResponse(Response &response, int code, std::string message, std::string warning);
 
 		void	executeCgi(Client *client);
 		char	**generateEnv(Client *client);
 		void	freeEnv(char **env);
 		void	readCgiOutput(int fd);
-		void	checkActiveCgi();
+		int		checkCgiTimeout(Cgi *cgi);
 };

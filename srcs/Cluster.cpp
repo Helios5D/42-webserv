@@ -98,7 +98,7 @@ void Cluster::handleClient(int fd) {
 			if (findClient(fd) != -1)
 				break ;
 
-			addToEpoll(client_fd, EPOLLIN | EPOLLRDHUP);
+			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
 
 			Client *new_client = new Client(client_fd, _servers[i]);
 			_clients.push_back(new_client);
@@ -118,6 +118,7 @@ void Cluster::handleRequest(int fd) {
 	Client	*client = _clients[findClient(fd)];
 	Request	*request = new Request(fd, client, *this);
 
+	request->readAndParseRequest();
 	client->setRequest(request);
 	request->handleRequest();
 
@@ -133,6 +134,12 @@ void Cluster::handleRequest(int fd) {
 }
 
 void Cluster::handleResponse(int fd) {
+
+
+	std::cout << COL_CYAN << "==============================" << std::endl;
+	std::cout << "      📤 Server Response      " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+
 	Client *client = _clients[findClient(fd)];
 	Request *request = client->getRequest();
 	const Response &response = request->getResponse();
@@ -143,22 +150,21 @@ void Cluster::handleResponse(int fd) {
 	ssize_t bytes_sent = send(fd, message.c_str() + client->bytes_sent, total_size - client->bytes_sent, 0);
 	if (bytes_sent > 0)
 		client->bytes_sent += static_cast<size_t>(bytes_sent);
-	else
-		throw std::runtime_error("Couldnt send data to client");
+	else {
+		std::cerr << " 🟠 [WARNING] Failed sending data to client" << std::endl << std::endl;
+		disconnectClient(fd);
+		return ;
+	}
 
 	if (client->bytes_sent == total_size) {
 		modifyEvents(fd, EPOLLIN | EPOLLRDHUP);
-
-		std::cout << COL_CYAN << "==============================" << std::endl;
-		std::cout << "      📤 Server Response      " << std::endl;
-		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 		std::cout << " 🔵 [STATUS] " << response.getCode() << std::endl;
 		std::cout << " 🔵 [MESSAGE] " << response.getMessage() << std::endl;
 
 		std::map<std::string, std::string> headers = request->getHeaders();
 		if (headers.find("connection") != headers.end() && headers["connection"] == "close") {
 			std::cout << std::endl;
-			disconnectClient(fd, 0);
+			disconnectClient(fd);
 			return ;
 		}
 
@@ -171,8 +177,12 @@ void Cluster::handleResponse(int fd) {
 		modifyEvents(fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
 }
 
-void Cluster::disconnectClient(int fd, bool error) {
+void Cluster::disconnectClient(int fd) {
 	Client			*client = _clients[findClient(fd)];
+
+	std::cout << COL_MAGENTA << "==============================" << std::endl;
+	std::cout << "     🔌 Client Disconnect     " << std::endl;
+	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing client");
@@ -180,13 +190,15 @@ void Cluster::disconnectClient(int fd, bool error) {
 
 	delete client;
 
-	std::cout << COL_MAGENTA << "==============================" << std::endl;
-	std::cout << "    🔌 Client Disconnected    " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	if (error)
-		std::cout << " 🟠 [WARNING] Unexpected client disconnect." << std::endl;
 	std::cout << " 🟣 [INFO] Client has disconnected." << std::endl;
 	std::cout << std::endl;
+}
+
+void Cluster::generateErrorResponse(Response &response, int code, std::string message, std::string warning) {
+	if (!warning.empty())
+		std::cerr << " 🟠 [WARNING] " << warning << std::endl << std::endl;
+	response.setCode(code);
+	response.setMessage(message);
 }
 
 void Cluster::start() {
@@ -218,9 +230,9 @@ void Cluster::start() {
 				readCgiOutput(fd);
 			else {
 				if (events[i].events & EPOLLERR)
-					disconnectClient(fd, true);
+					disconnectClient(fd);
 				else if (events[i].events & EPOLLRDHUP)
-					disconnectClient(fd, false);
+					disconnectClient(fd);
 				else {
 					if (events[i].events & EPOLLIN)
 						handleRequest(fd);
@@ -230,7 +242,6 @@ void Cluster::start() {
 				}
 			}
 		}
-		checkActiveCgi();
 	}
 
 	closeCluster(true);
@@ -240,7 +251,7 @@ void Cluster::closeCluster(bool print) {
 	if (print) {
 		std::cout << std::endl;
 		std::cout << COL_BLUE << "==============================" << std::endl;
-		std::cout << "    ❌ Server Shutdown ❌  " << std::endl;
+		std::cout << "    ❌ Server Shutdown ❌    " << std::endl;
 		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
 	}
 
@@ -284,60 +295,65 @@ void Cluster::readCgiOutput(int fd) {
 	do {
 		bytes_read = read(fd, buffer, 1024);
 		if (bytes_read < 0) {
-			std::cerr << "Error reading CGI output: " << strerror(errno) << std::endl;
-			throw std::runtime_error("read failed when reading cgi output");
+			Response &response = request->getResponse();
+
+			generateErrorResponse(response, 502,
+				"System function call failed", "Failed to read cgi output");
+
+			_cgis.erase(_cgis.begin() + findCgi(fd));
+			delete cgi;
 		}
 		res.append(buffer, bytes_read);
 	} while (bytes_read > 0);
+
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, 0) < 0)
 		throw std::runtime_error("epoll_ctl failed when removing cgi fd");
-
 	request->setResponseStr("HTTP/1.1 200 OK\r\n" + res);
 	_cgis.erase(_cgis.begin() + findCgi(fd));
 	delete cgi;
 }
 
-void Cluster::checkActiveCgi() {
-	int		status;
-	time_t	time = std::time(NULL);
+int Cluster::checkCgiTimeout(Cgi *cgi) {
+	while (true) {
+		int		status;
+		time_t	time = std::time(NULL);
+		int id = waitpid(cgi->getPid(), &status, WNOHANG);
 
-	for (size_t i = 0; i < _cgis.size(); i++) {
-		int id = waitpid(_cgis[i]->getPid(), &status, WNOHANG);
+		if (time - cgi->getStartTime() > TIMEOUT) {
+			Response	&response = cgi->getClient()->getRequest()->getResponse();
 
-		if (time - _cgis[i]->getStartTime() > TIMEOUT) {
-			Response	&response = _cgis[i]->getClient()->getRequest()->getResponse();
+			kill(cgi->getPid(), SIGKILL);
 
-			kill(_cgis[i]->getPid(), SIGKILL);
-			delete _cgis[i];
-			_cgis.erase(_cgis.begin() + i);
-			i--;
+			generateErrorResponse(response, 504,
+				"CGI timed out.", "CGI timed out");
 
-			response.setCode(504);
-			response.setMessage("CGI timed out.");
-			response.createResponse();
+			delete cgi;
+			return 1;
 		}
 
 		if (id == 0) {
 			continue;
 		} else if (id == -1) {
+			delete cgi;
 			throw std::runtime_error("waitpid failed when waiting for CGI process");
 		} else {
 			if (WIFEXITED(status)) {
-				Response	&response = _cgis[i]->getClient()->getRequest()->getResponse();
+				Response	&response = cgi->getClient()->getRequest()->getResponse();
 
 				int exit_code = WEXITSTATUS(status);
-				if (exit_code != 0) {
-					response.setCode(502);
-					response.setMessage("CGI execution failed.");
-					response.createResponse();
-				}
+				if (exit_code == 0)
+					return 0;
+				else if (exit_code == 2)
+					generateErrorResponse(response, 500,
+						"System function call fail", "Child process system function call failed");
+				else
+					generateErrorResponse(response, 502,
+						"CGI execution failed.", "CGI execution failed");
 			}
 
-			delete _cgis[i];
-			_cgis.erase(_cgis.begin() + i);
-			i--;
+			delete cgi;
+			return 1;
 		}
-
 	}
 }
 
@@ -346,19 +362,24 @@ void Cluster::executeCgi(Client *client) {
 	int			pipe_out[2];
 	std::string	cgi_path = request->getTargetFile();
 
-	if (pipe(pipe_out) < 0)
-		throw std::runtime_error("Pipe failed when executing CGI: " + cgi_path);
+	if (pipe(pipe_out) < 0) {
+		generateErrorResponse(request->getResponse(), 500,
+			"System function call fail", "pipe function failed when executing CGI");
+		return ;
+	}
 
-	// setNonBlocking(pipe_out[0]);
 	addToEpoll(pipe_out[0], EPOLLIN);
 
 	int	pid = fork();
-	if (pid < 0)
-		throw std::runtime_error("Fork failed when executing CGI: " + cgi_path);
-	else if (!pid) {
+	if (pid < 0) {
+		if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pipe_out[0], 0) < 0)
+			throw std::runtime_error("epoll_ctl failed when removing cgi");
+		generateErrorResponse(request->getResponse(), 500,
+			"System function call fail", "fork function failed when executing CGI");
+	} else if (!pid) {
 		running = false;
 		if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
-			throw std::runtime_error("Dup2 failed when executing CGI: " + cgi_path);
+			throw std::logic_error("Dup2 failed when executing CGI: " + cgi_path);
 
 		close(pipe_out[0]);
 		close(pipe_out[1]);
@@ -367,21 +388,22 @@ void Cluster::executeCgi(Client *client) {
 		std::string file = "." + cgi_path.substr(cgi_path.find_last_of('/'));
 
 		if (chdir(path.c_str()) < 0)
-			throw std::runtime_error("Couldnt open CGI directory");
+			throw std::logic_error("Couldnt open CGI directory");
 
 		char *args[] = {const_cast<char *>(file.c_str()), NULL};
 		char **env = generateEnv(client);
 
 		closeFds();
 		execve(file.c_str(), args, env);
-		std::cerr << COL_RED << "Execve failed" << COL_RESET << std::endl;
 		freeEnv(env);
 		throw std::exception();
 	} else {
-		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
-		_cgis.push_back(cgi);
-
 		close(pipe_out[1]);
+
+		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
+
+		if (checkCgiTimeout(cgi) == 0)
+			_cgis.push_back(cgi);
 	}
 }
 
