@@ -146,6 +146,8 @@ t_location Config::parseLocationBlock(std::stringstream &ss) {
 			std::istringstream iss(line);
 			std::string code;
 			getline(iss, code, ' ');
+			if (!isNumber(code) || code.size() != 3)
+				throw std::invalid_argument("Parsing error: Wrong return code: " + code);
 			location.redir_code = std::atoi(code.c_str());
 			getline(iss, location.redir_path);
 		} else if (line.find("allowed_methods ") == 0) {
