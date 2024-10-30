@@ -1,5 +1,12 @@
 #include "Request.hpp"
 
+Request::Request(const int &fd, Client *client, Cluster &cluster)
+		: _fd(fd), _isBeginning(true), _isComplete(false), _client(client), _server(*(_client->getServer())),
+		_cluster(cluster), _response(_server, _headers), _location(NULL), _contentLength(-1), _currentBodySize(0), _isCgi(false)
+{}
+
+Request::~Request() {}
+
 bool Request::_isBody() {
 	if (_headers.find("content-type") != _headers.end()
 			&& _headers.find("content-length") != _headers.end())
@@ -8,26 +15,22 @@ bool Request::_isBody() {
 	return false;
 }
 
-Request::Request(const int &fd, Client *client, Cluster &cluster)
-		: _client(client), _server(*(_client->getServer())), _cluster(cluster), _response(_server, _headers), _location(NULL), _contentLength(-1), _isCgi(false)
-{
-	std::string	headers;
+void Request::readAndParseRequest() {
 	int			bytesRead;
 	int			bufferSize = 30000;
 	char		buffer[bufferSize];
-	bool		isBeginning = true;
-	size_t		bodyLength = 0;
 
-	while ((bytesRead = read(fd, buffer, bufferSize - 1)) > 0 && (isBeginning || bodyLength < (unsigned long)_contentLength)) {
+	while ((bytesRead = read(_fd, buffer, bufferSize - 1)) > 0 && !_isComplete) {
 		buffer[bytesRead] = '\0';
 
-		if (isBeginning) {
-			const char *headersEnd = std::strstr(buffer, "\r\n\r\n");
+		if (_isBeginning) {
+			std::string	headers;
+			const char	*headersEnd = std::strstr(buffer, "\r\n\r\n");
 
 			if (!headersEnd)
 				headers.append(buffer, bytesRead);
 			else {
-				isBeginning = false;
+				_isBeginning = false;
 				headers.append(buffer, headersEnd - buffer);
 
 				std::stringstream ss(headers);
@@ -55,36 +58,29 @@ Request::Request(const int &fd, Client *client, Cluster &cluster)
 				if (_isBody()) {
 					int bodyStartIndex = headersEnd - buffer + 4;
 
-					if (_contentLength < bytesRead - bodyStartIndex)
+					if (_contentLength < (size_t)(bytesRead - bodyStartIndex)) {
 						_body.append(buffer, bodyStartIndex, _contentLength);
-					else
+						_isComplete = true;
+					} else
 						_body.append(buffer, bodyStartIndex, std::string::npos);
 
-					bodyLength = _body.length();
-				}
+					_currentBodySize = _body.length();
+				} else
+					_isComplete = true;
 			}
 		} else if (_isBody()) {
-			if ((unsigned long)_contentLength > bodyLength) {
-				if ((unsigned long)_contentLength < bodyLength + bytesRead)
-					_body.append(buffer, _contentLength - bodyLength);
-				else
+			if (_contentLength > _currentBodySize) {
+				if (_contentLength < _currentBodySize + bytesRead) {
+					_body.append(buffer, _contentLength - _currentBodySize);
+					_isComplete = true;
+				} else
 					_body.append(buffer);
 
-				bodyLength = _body.length();
+				_currentBodySize = _body.length();
 			}
 		}
 	}
-
-	std::string extension;
-	getFileExtension(_targetFile, extension);
-
-	if (!extension.empty() && '.' + extension == _location->cgi_extension) {
-		_isCgi = true;
-		_response.setIsCgi(true);
-	}
 }
-
-Request::~Request() {}
 
 bool Request::_checkTarget() {
 	std::string	route = _targetRoute;
@@ -130,6 +126,14 @@ bool Request::_checkTarget() {
 
 			removeMultipleSlashes(_targetFile);
 			_response.setFilePath(_targetFile);
+
+			std::string extension;
+			getFileExtension(_targetFile, extension);
+			if (!extension.empty() && '.' + extension == _location->cgi_extension) {
+				_isCgi = true;
+				_response.setIsCgi(true);
+			}
+
 			break ;
 		}
 		if (route == "/" && it == end)

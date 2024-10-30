@@ -13,6 +13,7 @@ class Request {
 		Request(const int &fd, Client *client, Cluster &cluster);
 		~Request();
 
+		void										readAndParseRequest();
 		void										handleRequest();
 
 		const std::string							&getMethod() const;
@@ -25,6 +26,9 @@ class Request {
 		void										setResponseStr(const std::string &responseStr);
 
 	private:
+		const int							_fd;
+		bool								_isBeginning;
+		bool								_isComplete;
 		Client								*_client;
 		const Server						&_server;
 		Cluster								&_cluster;
@@ -36,7 +40,8 @@ class Request {
 		const t_location					*_location;
 		std::map<std::string, std::string>	_headers;
 		std::string							_body;
-		long								_contentLength;
+		size_t								_contentLength;
+		size_t								_currentBodySize;
 		bool								_isCgi;
 
 		bool	_isBody();

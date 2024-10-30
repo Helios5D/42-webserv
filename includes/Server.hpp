@@ -10,7 +10,7 @@ class Server {
 		std::string					_ip;
 		std::string					_port;
 		std::string					_name;
-		long						_client_max_body_size;
+		size_t						_client_max_body_size;
 		std::map<int, std::string>	_error_pages;
 
 		std::vector<t_location>		_locations;
@@ -27,7 +27,7 @@ class Server {
 		const std::string					&getPort() const ;
 		const std::string					&getName() const;
 		const std::vector<t_location>		&getLocations() const;
-		long								getClientMaxBodySize() const;
+		size_t								getClientMaxBodySize() const;
 		const std::map<int, std::string>	&getErrorPages() const;
 		Server 								&operator=(const Server &rhs);
 		void								displayServerInfo();

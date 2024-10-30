@@ -102,7 +102,7 @@ const std::vector<t_location> &Server::getLocations() const {
 	return _locations;
 }
 
-long Server::getClientMaxBodySize() const {
+size_t Server::getClientMaxBodySize() const {
 	return _client_max_body_size;
 }
 
