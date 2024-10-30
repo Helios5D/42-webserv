@@ -3,7 +3,10 @@ import os
 import sys
 import urllib.parse
 
-username = os.getenv('username')
+input_data = sys.stdin.read()
+params = urllib.parse.parse_qs(input_data)
+
+username = params.get('username', [None])[0]
 
 body = f"You are succesfully logged in, {username}!"
 

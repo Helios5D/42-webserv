@@ -1,17 +1,25 @@
 #!/usr/bin/python3
 import os
+import sys
+import urllib.parse
 from datetime import datetime, date
 
-first_name = os.getenv('first_name')
-last_name = os.getenv('last_name')
-gender = os.getenv('gender')
+input_data = sys.stdin.read()
+params = urllib.parse.parse_qs(input_data)
 
-birthdate_str = os.getenv('birthdate')
-birthdate = datetime.strptime(birthdate_str, '%Y-%m-%d').date()
+first_name = params.get('first_name', [None])[0]
+last_name = params.get('last_name', [None])[0]
+gender = params.get('gender', [None])[0]
 
-height = float(os.getenv('height'))
-weight = float(os.getenv('weight'))
-activity = os.getenv('activity')
+birthdate_str = params.get('birthdate', [None])[0]
+if birthdate_str:
+    birthdate = datetime.strptime(birthdate_str, '%Y-%m-%d').date()
+else:
+    birthdate = None
+
+height = float(params.get('height', [0])[0]) if params.get('height') else None
+weight = float(params.get('weight', [0])[0]) if params.get('weight') else None
+activity = params.get('activity', [None])[0]
 
 today = date.today()
 age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
