@@ -137,7 +137,13 @@ void Cluster::handleRequest(int fd) {
 		client->setRequest(request);
 	}
 
-	request->readAndParseRequest();
+	try {
+		request->readAndParseRequest();
+	} catch (const std::exception &_) {
+		disconnectClient(fd);
+		return ;
+	}
+
 	if (request->getIsComplete()) {
 		request->handleRequest();
 
@@ -320,7 +326,8 @@ void Cluster::readCgiOutput(int fd) {
 
 			_cgis.erase(_cgis.begin() + findCgi(fd));
 			delete cgi;
-		}
+		} else if (bytes_read == 0)
+			break ;
 		res.append(buffer, bytes_read);
 	} while (bytes_read > 0);
 
@@ -435,12 +442,20 @@ void Cluster::executeCgi(Client *client) {
 		freeEnv(env);
 		throw std::exception();
 	} else {
-		if (!request->getBody().empty())
-			write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
+		if (!request->getBody().empty()) {
+			close(pipe_out[1]);
+			close(pipe_in[0]);
 
-		close(pipe_in[1]);
-		close(pipe_out[1]);
-		close(pipe_in[0]);
+			ssize_t bytes_written = write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
+
+			if (bytes_written <= 0) {
+				close(pipe_in[1]);
+				generateErrorResponse(request->getResponse(), 500, "System function call fail", "write failed when writing to cgi");
+			}
+
+			close(pipe_in[1]);
+
+		}
 
 		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
 

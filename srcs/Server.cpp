@@ -77,11 +77,8 @@ int	Server::acceptConnection() {
 	socklen_t	addr_len = sizeof(_socket_addr);
 	int			connection_fd = accept(_socket_fd, &_socket_addr, &addr_len);
 
-	if (connection_fd < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return -1;
+	if (connection_fd < 0)
 		throw std::runtime_error("Server socket accept connection failed");
-	}
 	return connection_fd;
 }
 

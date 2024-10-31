@@ -15,97 +15,86 @@ bool Request::_isBody() {
 	return false;
 }
 
-void readRemainingBytes(int fd) {
-	char	buffer[BUFFERSIZE];
-	int		ret;
-
-	do {
-		ret = read(fd, buffer, BUFFERSIZE);
-	} while (ret > 0);
-}
-
 void Request::readAndParseRequest() {
 	int			bytesRead;
 	char		buffer[BUFFERSIZE];
 
-	while ((bytesRead = read(_fd, buffer, BUFFERSIZE - 1)) > 0 && !_isComplete) {
-		buffer[bytesRead] = '\0';
-
-		if (_isBeginning) {
-			std::string	headers;
-			const char	*headersEnd = std::strstr(buffer, "\r\n\r\n");
-
-			if (!headersEnd) {
-				_response.setMessage("Malformed headers.");
-				_response.setCode(400);
+	do {
+		bytesRead = read(_fd, buffer, BUFFERSIZE - 1);
+		if (bytesRead == 0) {
+			throw std::exception();
+		} else if (bytesRead < 0) {
+			if (_response.getCode() != 200)
 				_isComplete = true;
-				readRemainingBytes(_fd);
-				return ;
-			} else {
-				_isBeginning = false;
-				headers.append(buffer, headersEnd - buffer);
+		} else {
+			if (_response.getCode() != 200)
+				continue ;
 
-				std::stringstream ss(headers);
+			buffer[bytesRead] = '\0';
 
-				if (!std::getline(ss, _startLine)) {
-					_response.setMessage("Missing start line.");
+			if (_isBeginning) {
+				std::string	headers;
+				const char	*headersEnd = std::strstr(buffer, "\r\n\r\n");
+
+				if (!headersEnd) {
+					_response.setMessage("Malformed headers.");
 					_response.setCode(400);
-					_isComplete = true;
-					readRemainingBytes(_fd);
-					return ;
-				}
-				if (_startLine[_startLine.length() - 1] == '\r')
-					_startLine.erase(_startLine.length() - 1);
+					continue ;
+				} else {
+					_isBeginning = false;
+					headers.append(buffer, headersEnd - buffer);
 
-				std::string headerLine;
-				while (std::getline(ss, headerLine)) {
-					if (headerLine[headerLine.length() - 1] == '\r')
-						headerLine.erase(headerLine.length() - 1);
+					std::stringstream ss(headers);
 
-					if (!_addHeader(headerLine)) {
-						_isComplete = true;
-						readRemainingBytes(_fd);
-						return ;
+					if (!std::getline(ss, _startLine)) {
+						_response.setMessage("Missing start line.");
+						_response.setCode(400);
+						continue ;
 					}
-				}
+					if (_startLine[_startLine.length() - 1] == '\r')
+						_startLine.erase(_startLine.length() - 1);
 
-				if (!_checkStartLine()) {
-					_isComplete = true;
-					readRemainingBytes(_fd);
-					return ;
-				}
+					std::string headerLine;
+					while (std::getline(ss, headerLine)) {
+						if (headerLine[headerLine.length() - 1] == '\r')
+							headerLine.erase(headerLine.length() - 1);
 
-				if (_isBody()) {
-					int bodyStartIndex = headersEnd - buffer + 4;
+						if (!_addHeader(headerLine))
+							continue ;
+					}
 
-					if (_contentLength <= (size_t)(bytesRead - bodyStartIndex)) {
-						_body.append(buffer + bodyStartIndex, _contentLength);
-						_currentBodySize += _contentLength;
+					if (!_checkStartLine())
+						continue ;
+
+					if (_isBody()) {
+						int bodyStartIndex = headersEnd - buffer + 4;
+
+						if (_contentLength <= (size_t)(bytesRead - bodyStartIndex)) {
+							_body.append(buffer + bodyStartIndex, _contentLength);
+							_currentBodySize += _contentLength;
+							_isComplete = true;
+						} else {
+							_body.append(buffer + bodyStartIndex, bytesRead - bodyStartIndex);
+							_currentBodySize += bytesRead - bodyStartIndex;
+						}
+					} else
 						_isComplete = true;
-						readRemainingBytes(_fd);
+				}
+			} else if (_isBody()) {
+				if (_contentLength > _currentBodySize) {
+					if (_contentLength <= _currentBodySize + bytesRead) {
+						_body.append(buffer, _contentLength - _currentBodySize);
+						_currentBodySize += _contentLength - _currentBodySize;
+						_isComplete = true;
 					} else {
-						_body.append(buffer + bodyStartIndex, bytesRead - bodyStartIndex);
-						_currentBodySize += bytesRead - bodyStartIndex;
+						_body.append(buffer, bytesRead);
+						_currentBodySize += bytesRead;
 					}
-				} else {
-					_isComplete = true;
-					readRemainingBytes(_fd);
-				}
-			}
-		} else if (_isBody()) {
-			if (_contentLength > _currentBodySize) {
-				if (_contentLength <= _currentBodySize + bytesRead) {
-					_body.append(buffer, _contentLength - _currentBodySize);
-					_currentBodySize += _contentLength - _currentBodySize;
-					_isComplete = true;
-					readRemainingBytes(_fd);
-				} else {
-					_body.append(buffer, bytesRead);
-					_currentBodySize += bytesRead;
 				}
 			}
 		}
 	}
+	while (bytesRead > 0);
 }
 
 bool Request::_checkTarget() {
