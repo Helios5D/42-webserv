@@ -21,6 +21,7 @@ class Request {
 		const std::map<std::string, std::string>	&getHeaders() const;
 		const std::string							&getBody() const;
 		const Response								&getResponse() const;
+		const bool									isComplete() const;
 		Response									&getResponse();
 
 		void										setResponseStr(const std::string &responseStr);

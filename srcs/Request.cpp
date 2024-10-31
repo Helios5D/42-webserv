@@ -312,6 +312,10 @@ const Response &Request::getResponse() const {
 	return _response;
 }
 
+const bool Request::isComplete() const {
+	return _isComplete;
+}
+
 void Request::setResponseStr(const std::string &responseStr) {
 	_response.setResponseStr(responseStr);
 }
