@@ -120,10 +120,18 @@ void Cluster::handleClient(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Client	*client = _clients[findClient(fd)];
-	Request	*request = new Request(fd, client, *this);
+	Client								*client = _clients[findClient(fd)];
+	Request								*request = new Request(fd, client, *this);
+	std::map<std::string, std::string>	headers = request->getHeaders();
 
 	request->readAndParseRequest();
+
+	for (size_t i = 0; i < _servers.size(); i++) {
+		if (headers.find("host") != headers.end() && _servers[i]->getName() == headers["host"]) {
+			client->setServer(_servers[i]);
+		}
+	}
+
 	client->setRequest(request);
 	request->handleRequest();
 

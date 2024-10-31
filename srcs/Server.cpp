@@ -44,6 +44,11 @@ void	Server::createSocket() {
 		throw std::runtime_error("setsockopt failed");
 	}
 
+	if (setsockopt(_socket_fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) < 0) {
+		freeaddrinfo(res);
+		throw std::runtime_error("setsockopt failed");
+	}
+
 	if (bind(_socket_fd, res->ai_addr, res->ai_addrlen) < 0) {
 		freeaddrinfo(res);
 		throw std::runtime_error("Server socket binding failed");

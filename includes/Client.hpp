@@ -21,6 +21,7 @@ class Client {
 		bool	isResponseReady();
 		void	setResponseReady(bool ready);
 		void	setRequest(Request *request);
+		void	setServer(Server *server);
 		int		getFd();
 		Server	*getServer();
 		Request	*getRequest();

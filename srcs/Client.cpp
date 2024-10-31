@@ -22,6 +22,10 @@ bool Client::isResponseReady() {
 	return _response_ready;
 }
 
+void Client::setServer(Server *server) {
+	_server = server;
+}
+
 int	Client::getFd() {
 	return _fd;
 }
