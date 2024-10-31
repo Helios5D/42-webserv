@@ -15,6 +15,7 @@ typedef struct s_location {
 } t_location;
 
 typedef struct s_server_config {
+	std::string						error;
 	std::string						ip;
 	std::string						port;
 	std::string						server_name;

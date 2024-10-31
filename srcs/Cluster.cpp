@@ -442,9 +442,10 @@ void Cluster::executeCgi(Client *client) {
 		freeEnv(env);
 		throw std::exception();
 	} else {
+		close(pipe_out[1]);
+		close(pipe_in[0]);
+
 		if (!request->getBody().empty()) {
-			close(pipe_out[1]);
-			close(pipe_in[0]);
 
 			ssize_t bytes_written = write(pipe_in[1], request->getBody().c_str(), request->getBody().size());
 
@@ -452,10 +453,8 @@ void Cluster::executeCgi(Client *client) {
 				close(pipe_in[1]);
 				generateErrorResponse(request->getResponse(), 500, "System function call fail", "write failed when writing to cgi");
 			}
-
-			close(pipe_in[1]);
-
 		}
+		close(pipe_in[1]);
 
 		Cgi *cgi = new Cgi(pipe_out[0], pid, client, std::time(NULL));
 

@@ -280,15 +280,12 @@ t_cluster_config Config::parseConfigFile(std::string path) {
 			if (line != "{")
 				throw std::invalid_argument("Parsing error at: " + line);
 			t_server_config server_config = parseServerBlock(ss);
-			bool is_duplicate = false;
+
 			for (size_t i = 0; i < cluster_config.servers.size(); i++) {
-				if (cluster_config.servers[i].ip == server_config.ip && cluster_config.servers[i].port == server_config.port) {
-					is_duplicate = true;
-					break ;
-				}
+				if (cluster_config.servers[i].port == server_config.port)
+					throw std::invalid_argument("Parsing error: invalid ports");
 			}
-			if (!is_duplicate)
-				cluster_config.servers.push_back(server_config);
+			cluster_config.servers.push_back(server_config);
 		}
 		else
 			throw std::invalid_argument("Parsing error at: " + line);

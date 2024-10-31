@@ -2,7 +2,7 @@
 
 // Defines //
 
-#define TIMEOUT 2.0
+#define TIMEOUT 1.0
 #define BUFFERSIZE 30000
 
 // Includes //
