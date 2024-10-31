@@ -17,10 +17,9 @@ bool Request::_isBody() {
 
 void Request::readAndParseRequest() {
 	int			bytesRead;
-	int			bufferSize = 30000;
-	char		buffer[bufferSize];
+	char		buffer[BUFFERSIZE];
 
-	while ((bytesRead = read(_fd, buffer, bufferSize - 1)) > 0 && !_isComplete) {
+	while ((bytesRead = read(_fd, buffer, BUFFERSIZE - 1)) > 0 && !_isComplete) {
 		buffer[bytesRead] = '\0';
 
 		if (_isBeginning) {
@@ -59,12 +58,13 @@ void Request::readAndParseRequest() {
 					int bodyStartIndex = headersEnd - buffer + 4;
 
 					if (_contentLength < (size_t)(bytesRead - bodyStartIndex)) {
-						_body.append(buffer, bodyStartIndex, _contentLength);
+						_body.append(buffer + bodyStartIndex, _contentLength);
+						_currentBodySize += _contentLength;
 						_isComplete = true;
-					} else
-						_body.append(buffer, bodyStartIndex, std::string::npos);
-
-					_currentBodySize = _body.length();
+					} else {
+						_body.append(buffer + bodyStartIndex, bytesRead - bodyStartIndex);
+						_currentBodySize += bytesRead - bodyStartIndex;
+					}
 				} else
 					_isComplete = true;
 			}
@@ -72,11 +72,12 @@ void Request::readAndParseRequest() {
 			if (_contentLength > _currentBodySize) {
 				if (_contentLength < _currentBodySize + bytesRead) {
 					_body.append(buffer, _contentLength - _currentBodySize);
+					_currentBodySize += _contentLength - _currentBodySize;
 					_isComplete = true;
-				} else
-					_body.append(buffer);
-
-				_currentBodySize = _body.length();
+				} else {
+					_body.append(buffer, bytesRead);
+					_currentBodySize += bytesRead;
+				}
 			}
 		}
 	}
@@ -312,7 +313,7 @@ const Response &Request::getResponse() const {
 	return _response;
 }
 
-const bool Request::isComplete() const {
+bool Request::getIsComplete() const {
 	return _isComplete;
 }
 

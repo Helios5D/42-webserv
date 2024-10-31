@@ -2,7 +2,6 @@
 
 import os
 import sys
-import urllib.parse
 
 content_length = os.getenv('CONTENT_LENGTH')
 content_type = os.getenv('CONTENT_TYPE')
@@ -11,7 +10,7 @@ if ((not content_length) or (not content_type)):
 	sys.exit(1)
 
 boundary = content_type.split("boundary=")[-1]
-boundary_b = b"--" + boundary.encode()
+boundary_b = b"\r\n--" + boundary.encode()
 input_data = sys.stdin.buffer.read(int(content_length))
 
 split_input = input_data.split(boundary_b)
