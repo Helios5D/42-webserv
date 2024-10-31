@@ -23,6 +23,6 @@ class Client {
 		void							setResponseReady(bool ready);
 		void							setRequest(Request *request);
 		int								getFd();
-		std::map<std::string, Server*>	getServers();
+		std::map<std::string, Server*>	&getServers();
 		Request							*getRequest();
 };

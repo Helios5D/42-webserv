@@ -5,11 +5,12 @@
 
 class Response {
 	public:
-		Response(const Server &server, const std::map<std::string, std::string> &requestHeaders);
+		Response(const std::map<std::string, std::string> &requestHeaders);
 		~Response();
 
 		void				createResponse();
 
+		void				setServer(Server *server);
 		void				setCode(const int code);
 		void				setMethod(const std::string &method);
 		void				setFilePath(const std::string &filePath);
@@ -23,7 +24,7 @@ class Response {
 		const std::string	&getResponseStr() const;
 
 	private:
-		const Server								&_server;
+		Server										*_server;
 		int											_code;
 		std::string									_method;
 		std::string									_filePath;

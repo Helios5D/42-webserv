@@ -26,7 +26,7 @@ int	Client::getFd() {
 	return _fd;
 }
 
-std::map<std::string, Server*> Client::getServers() {
+std::map<std::string, Server*>	&Client::getServers() {
 	return _servers;
 }
 

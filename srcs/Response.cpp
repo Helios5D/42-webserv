@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
-Response::Response(const Server &server, const std::map<std::string, std::string> &requestHeaders)
-		: _server(server), _code(200), _method("GET"), _filePath("./pages/fallback.html"), _requestHeaders(requestHeaders), _isCgi(false)
+Response::Response(const std::map<std::string, std::string> &requestHeaders)
+		: _server(NULL), _code(200), _method("GET"), _filePath("./pages/fallback.html"), _requestHeaders(requestHeaders), _isCgi(false)
 {}
 
 Response::~Response() {}
@@ -144,7 +144,9 @@ void Response::_createBody() {
 			}
 		}
 	} else {
-		std::map<int, std::string> errorPages = _server.getErrorPages();
+		if (!_server)
+			return ;
+		std::map<int, std::string> errorPages = _server->getErrorPages();
 		std::map<int, std::string>::const_iterator it = errorPages.find(_code);
 
 		if (it != errorPages.end()) {
@@ -163,6 +165,10 @@ void Response::_createBody() {
 	}
 
 	nbToStr(_headers["content-length"], _body.length());
+}
+
+void Response::setServer(Server *server) {
+	_server = server;
 }
 
 void Response::setCode(const int code) {

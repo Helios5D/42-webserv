@@ -129,24 +129,28 @@ void Cluster::handleClient(int fd) {
 }
 
 void Cluster::handleRequest(int fd) {
-	Client								*client = _clients[findClient(fd)];
-	Request								*request = new Request(fd, client, *this);
-	std::map<std::string, std::string>	headers = request->getHeaders();
+	Client	*client = _clients[findClient(fd)];
+	Request	*request = client->getRequest();
+
+	if (!request) {
+		request = new Request(fd, client, *this);
+		client->setRequest(request);
+	}
 
 	request->readAndParseRequest();
+	if (request->getIsComplete()) {
+		request->handleRequest();
 
-	client->setRequest(request);
-	request->handleRequest();
+		std::cout << COL_GREEN << "==============================" << std::endl;
+		std::cout << "      📥 Client Request       " << std::endl;
+		std::cout << "==============================" << COL_RESET << std::endl << std::endl;
+		std::cout << " 🟢 [REQUEST] " << request->getMethod() << " received!" << std::endl;
+		std::cout << std::endl;
 
-	std::cout << COL_GREEN << "==============================" << std::endl;
-	std::cout << "      📥 Client Request       " << std::endl;
-	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << "'SERVER NAME HERE'" << COL_RESET << std::endl;
-	std::cout << std::endl;
+		client->setResponseReady(true);
 
-	client->setResponseReady(true);
-
-	modifyEvents(fd, EPOLLOUT | EPOLLRDHUP);
+		modifyEvents(fd, EPOLLOUT | EPOLLRDHUP);
+	}
 }
 
 void Cluster::handleResponse(int fd) {
@@ -455,8 +459,8 @@ char **Cluster::generateEnv(Client *client) {
 	while (getline(iss, var, '&'))
 		args.push_back(var);
 	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	// args.push_back("UPLOAD_SAVE=" + request->getLocation().upload_save)
-	// args.push_back("SERVER_NAME=" + request->getServer()->getName());
+	args.push_back("UPLOAD_SAVE=" + request->getLocation()->upload_save);
+	args.push_back("SERVER_NAME=" + request->getServer()->getName());
 	args.push_back("REQUEST_METHOD=" + request->getMethod());
 	if (request->getHeaders().find("content-type") != request->getHeaders().end())
 		args.push_back("CONTENT_TYPE=" + headers["content-type"]);

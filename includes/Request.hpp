@@ -21,8 +21,10 @@ class Request {
 		const std::map<std::string, std::string>	&getHeaders() const;
 		const std::string							&getBody() const;
 		const Response								&getResponse() const;
-		bool										getIsComplete() const;
 		Response									&getResponse();
+		bool										getIsComplete() const;
+		const t_location							*getLocation() const;
+		const Server								*getServer() const;
 
 		void										setResponseStr(const std::string &responseStr);
 
@@ -31,7 +33,7 @@ class Request {
 		bool								_isBeginning;
 		bool								_isComplete;
 		Client								*_client;
-		const Server						&_server;
+		Server								*_server;
 		Cluster								&_cluster;
 		Response							_response;
 		std::string							_startLine;

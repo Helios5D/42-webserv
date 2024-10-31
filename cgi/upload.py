@@ -7,7 +7,7 @@ content_length = os.getenv('CONTENT_LENGTH')
 content_type = os.getenv('CONTENT_TYPE')
 upload_save = os.getenv('UPLOAD_SAVE')
 
-if ((not content_length) or (not content_type)):
+if ((not content_length) or (not content_type) or (not upload_save)):
 	sys.exit(1)
 
 boundary = content_type.split("boundary=")[-1]
@@ -21,7 +21,8 @@ for content in split_input:
 		filename = content.split(b"filename=\"")[1].split(b"\"")[0].decode()
 		file_content = content.split(b"\r\n\r\n")[1]
 
-		file_path = os.path.join(os.path.dirname(__file__), upload_save, filename)
+		file_path = '.' + os.path.join(os.path.dirname(__file__), upload_save, filename)
+		os.makedirs(os.path.dirname(file_path), exist_ok=True)
 		with open(file_path, 'wb') as file:
 			file.write(file_content)
 

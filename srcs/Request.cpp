@@ -1,8 +1,8 @@
 #include "Request.hpp"
 
 Request::Request(const int &fd, Client *client, Cluster &cluster)
-		: _fd(fd), _isBeginning(true), _isComplete(false), _client(client), _server(*(_client->getServer())),
-		_cluster(cluster), _response(_server, _headers), _location(NULL), _contentLength(-1), _currentBodySize(0), _isCgi(false)
+		: _fd(fd), _isBeginning(true), _isComplete(false), _client(client), _server(NULL),
+		_cluster(cluster), _response(_headers), _location(NULL), _contentLength(-1), _currentBodySize(0), _isCgi(false)
 {}
 
 Request::~Request() {}
@@ -13,6 +13,15 @@ bool Request::_isBody() {
 		return true;
 
 	return false;
+}
+
+void readRemainingBytes(int fd) {
+	char	buffer[BUFFERSIZE];
+	int		ret;
+
+	do {
+		ret = read(fd, buffer, BUFFERSIZE);
+	} while (ret > 0);
 }
 
 void Request::readAndParseRequest() {
@@ -29,6 +38,8 @@ void Request::readAndParseRequest() {
 			if (!headersEnd) {
 				_response.setMessage("Malformed headers.");
 				_response.setCode(400);
+				_isComplete = true;
+				readRemainingBytes(_fd);
 				return ;
 			} else {
 				_isBeginning = false;
@@ -39,6 +50,8 @@ void Request::readAndParseRequest() {
 				if (!std::getline(ss, _startLine)) {
 					_response.setMessage("Missing start line.");
 					_response.setCode(400);
+					_isComplete = true;
+					readRemainingBytes(_fd);
 					return ;
 				}
 				if (_startLine[_startLine.length() - 1] == '\r')
@@ -49,33 +62,43 @@ void Request::readAndParseRequest() {
 					if (headerLine[headerLine.length() - 1] == '\r')
 						headerLine.erase(headerLine.length() - 1);
 
-					if (!_addHeader(headerLine))
+					if (!_addHeader(headerLine)) {
+						_isComplete = true;
+						readRemainingBytes(_fd);
 						return ;
+					}
 				}
 
-				if (!_checkStartLine())
+				if (!_checkStartLine()) {
+					_isComplete = true;
+					readRemainingBytes(_fd);
 					return ;
+				}
 
 				if (_isBody()) {
 					int bodyStartIndex = headersEnd - buffer + 4;
 
-					if (_contentLength < (size_t)(bytesRead - bodyStartIndex)) {
+					if (_contentLength <= (size_t)(bytesRead - bodyStartIndex)) {
 						_body.append(buffer + bodyStartIndex, _contentLength);
 						_currentBodySize += _contentLength;
 						_isComplete = true;
+						readRemainingBytes(_fd);
 					} else {
 						_body.append(buffer + bodyStartIndex, bytesRead - bodyStartIndex);
 						_currentBodySize += bytesRead - bodyStartIndex;
 					}
-				} else
+				} else {
 					_isComplete = true;
+					readRemainingBytes(_fd);
+				}
 			}
 		} else if (_isBody()) {
 			if (_contentLength > _currentBodySize) {
-				if (_contentLength < _currentBodySize + bytesRead) {
+				if (_contentLength <= _currentBodySize + bytesRead) {
 					_body.append(buffer, _contentLength - _currentBodySize);
 					_currentBodySize += _contentLength - _currentBodySize;
 					_isComplete = true;
+					readRemainingBytes(_fd);
 				} else {
 					_body.append(buffer, bytesRead);
 					_currentBodySize += bytesRead;
@@ -97,8 +120,11 @@ bool Request::_checkTarget() {
 	removeMultipleSlashes(route);
 
 	while (!route.empty()) {
-		std::vector<t_location>::const_iterator it = _server.getLocations().begin();
-		std::vector<t_location>::const_iterator end = _server.getLocations().end();
+		if (!_server) {
+			return false;
+		}
+		std::vector<t_location>::const_iterator it = _server->getLocations().begin();
+		std::vector<t_location>::const_iterator end = _server->getLocations().end();
 
 		for (; it != end; it++)
 			if ((*it).path == route)
@@ -234,6 +260,19 @@ bool Request::_addHeader(const std::string &headerLine) {
 	if (!isValidValue(value))
 		return (setMalformedHeaderResponse(_response), false);
 
+	if (key == "host") {
+		std::map<std::string, Server*> servers = _client->getServers();
+		std::map<std::string, Server*>::iterator it;
+
+		it = servers.find(value);
+		if (it != servers.end())
+			_server = (*it).second;
+		else
+			_server = (*servers.begin()).second;
+
+		_response.setServer(_server);
+	}
+
 	if (key == "content-length") {
 		size_t valueLen = value.length();
 
@@ -246,7 +285,9 @@ bool Request::_addHeader(const std::string &headerLine) {
 		if (_contentLength > INT_MAX)
 			return (setMalformedHeaderResponse(_response), false);
 
-		if (_contentLength > _server.getClientMaxBodySize()) {
+		if (!_server)
+			return false;
+		if (_contentLength > _server->getClientMaxBodySize()) {
 			_response.setMessage("Body sent is too large.");
 			_response.setCode(413);
 			return false;
@@ -265,7 +306,7 @@ void Request::handleRequest() {
 		_handleDelete();
 	else if (_isCgi)
 		_cluster.executeCgi(_client);
-	else if (_method == "POST") {
+	else if (_method == "POST" && _response.getCode() == 200) {
 		_response.setCode(405);
 		_response.setMessage("A POST request cannot be executed on something else than a CGI.");
 	}
@@ -317,6 +358,14 @@ const Response &Request::getResponse() const {
 
 bool Request::getIsComplete() const {
 	return _isComplete;
+}
+
+const t_location *Request::getLocation() const {
+	return _location;
+}
+
+const Server *Request::getServer() const {
+	return _server;
 }
 
 void Request::setResponseStr(const std::string &responseStr) {
