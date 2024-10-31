@@ -107,10 +107,10 @@ void Cluster::handleClient(int fd) {
 
 			std::map<std::string, Server*> servers;
 
-			for (size_t i = 0; i < _servers.size(); i++) {
-				if (_servers[i]->getFd() == fd) {
-					std::string hostname = _servers[i]->getIp() + ":" + _servers[i]->getPort();
-					servers[hostname] = _servers[i];
+			for (size_t j = 0; j < _servers.size(); j++) {
+				if (_servers[j]->getFd() == _servers[i]->getFd()) {
+					std::string hostname = _servers[j]->getIp() + ":" + _servers[j]->getPort();
+					servers[hostname] = _servers[j];
 				}
 			}
 
@@ -455,7 +455,8 @@ char **Cluster::generateEnv(Client *client) {
 	while (getline(iss, var, '&'))
 		args.push_back(var);
 	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	// args.push_back("SERVER_NAME=" + client->getServer()->getName());
+	// args.push_back("UPLOAD_SAVE=" + request->getLocation().upload_save)
+	// args.push_back("SERVER_NAME=" + request->getServer()->getName());
 	args.push_back("REQUEST_METHOD=" + request->getMethod());
 	if (request->getHeaders().find("content-type") != request->getHeaders().end())
 		args.push_back("CONTENT_TYPE=" + headers["content-type"]);
