@@ -26,9 +26,11 @@ void Request::readAndParseRequest() {
 			std::string	headers;
 			const char	*headersEnd = std::strstr(buffer, "\r\n\r\n");
 
-			if (!headersEnd)
-				headers.append(buffer, bytesRead);
-			else {
+			if (!headersEnd) {
+				_response.setMessage("Malformed headers.");
+				_response.setCode(400);
+				return ;
+			} else {
 				_isBeginning = false;
 				headers.append(buffer, headersEnd - buffer);
 
