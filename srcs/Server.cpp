@@ -99,6 +99,10 @@ const std::string &Server::getPort() const {
 	return _port;
 }
 
+const std::string &Server::getIp() const {
+	return _ip;
+}
+
 const std::string &Server::getName() const {
 	return _name;
 }

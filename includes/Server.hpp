@@ -24,6 +24,7 @@ class Server {
 		int									acceptConnection();
 		int									init();
 		int									getFd() const;
+		const std::string					&getIp() const ;
 		const std::string					&getPort() const ;
 		const std::string					&getName() const;
 		const std::vector<t_location>		&getLocations() const;

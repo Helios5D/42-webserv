@@ -105,7 +105,16 @@ void Cluster::handleClient(int fd) {
 
 			addToEpoll(client_fd, EPOLLIN | EPOLLOUT | EPOLLRDHUP);
 
-			Client *new_client = new Client(client_fd, _servers[i]);
+			std::map<std::string, Server*> servers;
+
+			for (size_t i = 0; i < _servers.size(); i++) {
+				if (_servers[i]->getFd() == fd) {
+					std::string hostname = _servers[i]->getIp() + ":" + _servers[i]->getPort();
+					servers[hostname] = _servers[i];
+				}
+			}
+
+			Client *new_client = new Client(client_fd, servers);
 			_clients.push_back(new_client);
 
 			std::cout << COL_BLUE << "==============================" << std::endl;
@@ -126,19 +135,13 @@ void Cluster::handleRequest(int fd) {
 
 	request->readAndParseRequest();
 
-	for (size_t i = 0; i < _servers.size(); i++) {
-		if (headers.find("host") != headers.end() && _servers[i]->getName() == headers["host"]) {
-			client->setServer(_servers[i]);
-		}
-	}
-
 	client->setRequest(request);
 	request->handleRequest();
 
 	std::cout << COL_GREEN << "==============================" << std::endl;
 	std::cout << "      📥 Client Request       " << std::endl;
 	std::cout << "==============================" << COL_RESET << std::endl << std::endl;
-	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << client->getServer()->getName() << COL_RESET << std::endl;
+	std::cout << " 🟢 [REQUEST] " << request->getMethod() << " on server " << COL_CYAN << "'SERVER NAME HERE'" << COL_RESET << std::endl;
 	std::cout << std::endl;
 
 	client->setResponseReady(true);
@@ -452,7 +455,7 @@ char **Cluster::generateEnv(Client *client) {
 	while (getline(iss, var, '&'))
 		args.push_back(var);
 	args.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	args.push_back("SERVER_NAME=" + client->getServer()->getName());
+	// args.push_back("SERVER_NAME=" + client->getServer()->getName());
 	args.push_back("REQUEST_METHOD=" + request->getMethod());
 	if (request->getHeaders().find("content-type") != request->getHeaders().end())
 		args.push_back("CONTENT_TYPE=" + headers["content-type"]);

@@ -9,20 +9,20 @@ class Request;
 
 class Client {
 	private:
-		int		_fd;
-		Server	*_server;
-		Request	*_request;
-		bool	_response_ready;
+		int								_fd;
+		std::map<std::string, Server*>	_servers;
+		Request							*_request;
+		bool							_response_ready;
 
 	public:
-				Client(int fd, Server *server);
-				~Client();
-		size_t	bytes_sent;
-		bool	isResponseReady();
-		void	setResponseReady(bool ready);
-		void	setRequest(Request *request);
-		void	setServer(Server *server);
-		int		getFd();
-		Server	*getServer();
-		Request	*getRequest();
+		Client(int fd, std::map<std::string, Server*> servers);
+		~Client();
+
+		size_t							bytes_sent;
+		bool							isResponseReady();
+		void							setResponseReady(bool ready);
+		void							setRequest(Request *request);
+		int								getFd();
+		std::map<std::string, Server*>	getServers();
+		Request							*getRequest();
 };

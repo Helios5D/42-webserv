@@ -1,7 +1,7 @@
 #include "Client.hpp"
 
-Client::Client(int fd, Server *server)
-: _fd(fd), _server(server), _request(NULL), _response_ready(false), bytes_sent(0)
+Client::Client(int fd, std::map<std::string, Server*> servers)
+: _fd(fd), _servers(servers), _request(NULL), _response_ready(false), bytes_sent(0)
 {}
 
 Client::~Client()
@@ -22,16 +22,12 @@ bool Client::isResponseReady() {
 	return _response_ready;
 }
 
-void Client::setServer(Server *server) {
-	_server = server;
-}
-
 int	Client::getFd() {
 	return _fd;
 }
 
-Server *Client::getServer() {
-	return _server;
+std::map<std::string, Server*> Client::getServers() {
+	return _servers;
 }
 
 Request *Client::getRequest() {
