@@ -3,6 +3,8 @@
 
 int main(int argc, char **argv) {
 	std::string	conf_path;
+	int			i = 0;
+
 	if (argc > 2) {
 		std::cerr << "Error: Wrong numbers of arguments" << std::endl;
 		return 1;
@@ -23,13 +25,16 @@ int main(int argc, char **argv) {
 	initializeCodesResponses();
 	initializeContentTypes();
 
-	while (1) {
+	while (i <= 3) {
 		Cluster cluster(config);
 
 		try {
 			cluster.start();
 			return 0;
 		} catch (std::runtime_error &e) {
+			if (i == 3)
+				return 1;
+			
 			std::cerr << std::string(" 🔴 [ERROR] ") + e.what() << std::endl << std::endl;
 			std::cout << " 🔵 [INFO] Restarting server ..." << std::endl;
 
@@ -42,6 +47,8 @@ int main(int argc, char **argv) {
 			cluster.closeCluster(false);
 			return 1;
 		}
+		
+		i++;
 	}
 
 	return 0;

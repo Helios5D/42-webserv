@@ -19,6 +19,7 @@ Cluster::Cluster(t_cluster_config config)
 	_epoll_fd = epoll_create1(0);
 	if (_epoll_fd < 0)
 		throw std::runtime_error("Epoll creation failed");
+		
 	for (size_t i = 0; i < config.servers.size(); i++) {
 		Server *server = new Server(config.servers[i]);
 		_servers.push_back(server);
@@ -226,10 +227,15 @@ void Cluster::generateErrorResponse(Response &response, int code, std::string me
 
 void Cluster::start() {
 	struct epoll_event	events[20];
-
-	for (size_t i = 0; i < _servers.size(); i++) {
-		_servers[i]->init();
-		addToEpoll(_servers[i]->getFd(), EPOLLIN);
+	
+	try {
+		for (size_t i = 0; i < _servers.size(); i++) {
+			_servers[i]->init();
+			addToEpoll(_servers[i]->getFd(), EPOLLIN);
+		}
+	} catch (const std::runtime_error &e) {
+		std::cerr << std::string(" 🔴 [ERROR] ") + e.what() << std::endl << std::endl;
+		throw std::exception();
 	}
 
 	running = true;
